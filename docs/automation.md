@@ -27,7 +27,8 @@ on main, the release workflow tests and publishes the resulting app.
    invalid or repeated version codes.
 2. A separate read-only job applies the plan, builds unsigned release APKs, runs
    Android lint, and runs RoomIntegrationTest on an Android TV API 36 x86_64
-   emulator. The test exercises the actual server, authorization, download queue,
+   emulator. The complete source archive is uploaded before any build code runs.
+   The test exercises the actual server, authorization, download queue,
    file storage, FFmpeg processing, and browser playback.
 3. A fresh signing job receives the distribution key through the android-release
    environment, whose deployment branch policy allows main only. This job runs

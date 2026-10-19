@@ -65,6 +65,7 @@ jobs:
           path: "${{ runner.temp }}/update-plan.json"
           retention-days: 7
           if-no-files-found: "error"
+          overwrite: true
   build:
     needs: "prepare"
     if: "needs.prepare.outputs.publish == 'true'"
@@ -102,6 +103,13 @@ jobs:
           python scripts/automation.py apply "$RUNNER_TEMP/plan/update-plan.json"
           mkdir -p "$RUNNER_TEMP/pikaraoke-source"
           python scripts/archive_source.py "$RUNNER_TEMP/pikaraoke-source/source-with-upstream.tar.gz"
+      - uses: "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        with:
+          name: "complete-source"
+          path: "${{ runner.temp }}/pikaraoke-source/source-with-upstream.tar.gz"
+          retention-days: 7
+          if-no-files-found: "error"
+          overwrite: true
       - name: "Prepare build and emulator tools"
         run: |
           python -m pip install Babel==2.17.0
@@ -126,6 +134,7 @@ jobs:
           path: "app/build/reports/androidTests/"
           retention-days: 7
           if-no-files-found: "error"
+          overwrite: true
         if: "always()"
       - uses: "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
         with:
@@ -133,12 +142,7 @@ jobs:
           path: "app/build/outputs/apk/release/*-release-unsigned.apk"
           retention-days: 7
           if-no-files-found: "error"
-      - uses: "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-        with:
-          name: "complete-source"
-          path: "${{ runner.temp }}/pikaraoke-source/source-with-upstream.tar.gz"
-          retention-days: 7
-          if-no-files-found: "error"
+          overwrite: true
   sign:
     needs:
       - "prepare"
@@ -185,6 +189,7 @@ jobs:
           path: "${{ runner.temp }}/signed/*"
           retention-days: 7
           if-no-files-found: "error"
+          overwrite: true
   publish:
     needs:
       - "prepare"
