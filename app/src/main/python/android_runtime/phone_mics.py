@@ -49,6 +49,7 @@ def install(app, context):
 
     @bp.before_request
     def check_origin():
+        request.max_content_length = 65536
         if request.method not in ('GET', 'HEAD', 'OPTIONS'):
             origin = request.headers.get('Origin')
             if origin and origin != request.host_url.rstrip('/'):

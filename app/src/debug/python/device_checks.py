@@ -6,9 +6,39 @@ from pathlib import Path
 import subprocess
 import threading
 import time
+import ssl
 
 import requests
 from android_runtime import bootstrap
+
+
+def check_phone_microphones(context, guest, root):
+    ca = Path(str(context.getNoBackupFilesDir())) / 'phone-mic-tls/ca.crt'
+    trusted = Path(str(context.getCacheDir())) / 'qa-mic-ca.pem'
+    trusted.write_text(ssl.DER_cert_to_PEM_cert(ca.read_bytes()))
+    secure = 'https://127.0.0.1:8443'
+    tokens = []
+    try:
+        for path in ['/mic', '/static/phone-mic.js', '/static/phone-mic-worklet.js', '/static/phone-mic.css']:
+            assert guest.get(root + path, timeout=10).status_code == 200
+            assert guest.get(secure + path, verify=str(trusted), timeout=10).status_code == 200
+        assert guest.post(root + '/api/phone-mics', json={'name':'HTTP refused'}, timeout=10).status_code == 403
+        assert guest.post(secure + '/api/phone-mics', json={'name':'Origin refused'},
+                          headers={'Origin':'https://other.invalid'}, verify=str(trusted), timeout=10).status_code == 403
+        for number in range(4):
+            response = guest.post(secure + '/api/phone-mics', json={'name':f'Phone {number+1}'}, verify=str(trusted), timeout=10)
+            assert response.status_code == 201, response.status_code
+            tokens.append(response.json()['id'])
+        assert guest.post(secure + '/api/phone-mics', json={'name':'Fifth'}, verify=str(trusted), timeout=10).status_code == 409
+        state = guest.get(secure + '/api/phone-mics', verify=str(trusted), timeout=10)
+        assert len(state.json()['active']) == 4
+        assert all(token not in state.text for token in tokens)
+        assert guest.post(secure + '/api/phone-mics/' + tokens[0] + '/controls',
+                          json={'gain':.4,'muted':True,'reverb':1}, verify=str(trusted), timeout=10).status_code == 200
+    finally:
+        for token in tokens:
+            guest.delete(secure + '/api/phone-mics/' + token, verify=str(trusted), timeout=10)
+        trusted.unlink(missing_ok=True)
 
 
 def run(context):
@@ -24,6 +54,8 @@ def run(context):
     for path in ['/', '/splash', '/browse', '/queue', '/search', '/info', '/settings', '/history', '/sessions', '/rankings']:
         response = host.get(root + path)
         assert response.status_code == 200, (path, response.status_code, response.text[:200])
+
+    check_phone_microphones(context, guest, root)
 
     filters = subprocess.check_output(['ffmpeg', '-hide_banner', '-filters']).decode()
     for name in ['rubberband', 'loudnorm']:
@@ -86,7 +118,7 @@ def run(context):
         assert stats.status_code == 200 and 'memory' in stats.json()
         from pikaraoke import VERSION
         return json.dumps({'download_to_file': True, 'tv_browser_playback_position': state['now_playing_position'],
-                           'phone_api_and_auth': True, 'pitch_and_normalization': True,
+                           'phone_api_and_auth': True, 'phone_mic_https_and_four_slots': True, 'pitch_and_normalization': True,
                            'ytdlp': ytdlp_version, 'ffmpeg': str(k.ffmpeg_version), 'pikaraoke': VERSION})
     finally:
         server.shutdown()

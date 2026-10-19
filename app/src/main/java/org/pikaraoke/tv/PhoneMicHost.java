@@ -15,9 +15,11 @@ import livekit.org.webrtc.*;
 public final class PhoneMicHost {
     public static final int MAX_MICS = 4;
     private static PhoneMicHost instance;
+    private static boolean initialized;
     private final ConcurrentHashMap<String, Peer> peers = new ConcurrentHashMap<>();
     private final PeerConnectionFactory factory;
     private final ScheduledExecutorService cleanup = Executors.newSingleThreadScheduledExecutor();
+    private final Object disposalLock = new Object();
     private volatile boolean running = true;
     private final Thread mixer;
     private volatile long writtenFrames;
@@ -32,13 +34,16 @@ public final class PhoneMicHost {
         if (instance != null) { instance.close(); instance = null; }
     }
     private PhoneMicHost(Context context) {
-        PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions());
+        if (!initialized) {
+            PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions());
+            initialized = true;
+        }
         factory = PeerConnectionFactory.builder().createPeerConnectionFactory();
         mixer = new Thread(this::mix, "PiKaraoke phone mix");
         mixer.start();
         cleanup.scheduleAtFixedRate(() -> {
             long now = System.nanoTime();
-            for (Peer p : peers.values()) if (now - p.heartbeat > 30_000_000_000L) leave(p.id);
+            for (Peer p : peers.values()) if (now - p.heartbeat > (p.connected ? 30_000_000_000L : 15_000_000_000L)) leave(p.id);
         }, 5, 5, TimeUnit.SECONDS);
     }
     public synchronized String join(String name) throws JSONException {
@@ -55,7 +60,7 @@ public final class PhoneMicHost {
         JSONArray active = new JSONArray();
         for (Peer p : peers.values()) synchronized (p) {
             active.put(new JSONObject().put("slot", p.slot).put("name", p.name)
-                .put("muted", p.pcm.muted).put("connected", p.channel != null && p.channel.state() == DataChannel.State.OPEN)
+                .put("muted", p.pcm.muted).put("connected", p.connected)
                 .put("received_packets", p.pcm.received).put("buffer_frames", p.pcm.queuedFrames()));
         }
         return new JSONObject().put("max", MAX_MICS).put("active", active)
@@ -69,23 +74,25 @@ public final class PhoneMicHost {
     public void heartbeat(String id) { peer(id); }
     public void controls(String id, float gain, boolean muted, int reverb) { peer(id).pcm.controls(gain, muted, reverb); }
     public void leave(String id) {
-        Peer p = peers.remove(id);
-        if (p != null) {
-            p.pcm.controls(0, true, 0);
-            // Native callbacks must not synchronously dispose their own peer.
-            if (!cleanup.isShutdown()) cleanup.execute(p::dispose);
-            else p.dispose();
+        synchronized (disposalLock) {
+            Peer p = peers.remove(id);
+            if (p != null) {
+                p.pcm.controls(0, true, 0);
+                // Native callbacks must not synchronously dispose their own peer.
+                cleanup.execute(p::dispose);
+            }
         }
     }
     public String answer(String id, String offer) throws Exception {
         Peer p = peer(id);
-        synchronized (p) {
+        synchronized (this) { synchronized (p) {
+            if (!running || peers.get(id) != p) throw new IllegalArgumentException("Microphone disconnected.");
             if (p.connection != null) throw new IllegalArgumentException("Microphone is already connected.");
             PeerConnection.RTCConfiguration cfg = new PeerConnection.RTCConfiguration(Collections.emptyList());
             cfg.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN;
             p.connection = factory.createPeerConnection(cfg, p);
             if (p.connection == null) throw new IllegalStateException("Could not start the microphone connection.");
-        }
+        } }
         try {
             CompletableFuture<Void> remote = new CompletableFuture<>();
             synchronized (p) { p.requireConnection().setRemoteDescription(new Description(remote), new SessionDescription(SessionDescription.Type.OFFER, offer)); }
@@ -121,21 +128,35 @@ public final class PhoneMicHost {
         volatile long heartbeat = System.nanoTime();
         volatile PeerConnection connection;
         volatile DataChannel channel;
+        volatile boolean connected;
         Peer(String id, int slot, String name) { this.id = id; this.slot = slot; this.name = name; }
         PeerConnection requireConnection() {
             if (connection == null || !peers.containsKey(id)) throw new IllegalArgumentException("Microphone disconnected");
             return connection;
         }
-        synchronized void dispose() {
-            if (channel != null) { channel.unregisterObserver(); channel.close(); channel.dispose(); channel = null; }
-            if (connection != null) { connection.close(); connection.dispose(); connection = null; }
+        void dispose() {
+            DataChannel oldChannel;
+            PeerConnection oldConnection;
+            synchronized (this) {
+                oldChannel = channel; channel = null; connected = false;
+                oldConnection = connection; connection = null;
+            }
+            // close()/dispose() may wait for callbacks; never hold the peer monitor.
+            if (oldChannel != null) { oldChannel.unregisterObserver(); oldChannel.close(); oldChannel.dispose(); }
+            if (oldConnection != null) { oldConnection.close(); oldConnection.dispose(); }
         }
         public synchronized void onDataChannel(DataChannel data) {
             if (!data.label().equals("audio") || channel != null || !peers.containsKey(id)) { data.close(); return; }
             channel = data;
+            connected = data.state() == DataChannel.State.OPEN;
             data.registerObserver(new DataChannel.Observer() {
                 public void onBufferedAmountChange(long previous) { }
-                public void onStateChange() { synchronized (Peer.this) { if (channel == data && data.state() == DataChannel.State.CLOSED) leave(id); } }
+                public void onStateChange() { synchronized (Peer.this) {
+                    if (channel != data) return;
+                    connected = data.state() == DataChannel.State.OPEN;
+                    if (connected) heartbeat = System.nanoTime();
+                    if (data.state() == DataChannel.State.CLOSED) leave(id);
+                } }
                 public void onMessage(DataChannel.Buffer message) {
                     if (message.binary && message.data.remaining() <= 2064) pcm.push(message.data, System.nanoTime());
                 }
@@ -146,8 +167,11 @@ public final class PhoneMicHost {
         }
         public void onIceConnectionChange(PeerConnection.IceConnectionState state) {
             if (state == PeerConnection.IceConnectionState.FAILED || state == PeerConnection.IceConnectionState.CLOSED) leave(id);
-            if (state == PeerConnection.IceConnectionState.DISCONNECTED && !cleanup.isShutdown())
-                cleanup.schedule(() -> { synchronized (Peer.this) { if (connection != null && connection.iceConnectionState() == PeerConnection.IceConnectionState.DISCONNECTED) leave(id); } }, 5, TimeUnit.SECONDS);
+            if (state == PeerConnection.IceConnectionState.DISCONNECTED) {
+                try {
+                    cleanup.schedule(() -> { synchronized (Peer.this) { if (connection != null && connection.iceConnectionState() == PeerConnection.IceConnectionState.DISCONNECTED) leave(id); } }, 5, TimeUnit.SECONDS);
+                } catch (RejectedExecutionException ignored) { /* Room shutdown already owns disposal. */ }
+            }
         }
         public void onSignalingChange(PeerConnection.SignalingState state) { }
         public void onIceConnectionReceivingChange(boolean receiving) { }
@@ -191,9 +215,9 @@ public final class PhoneMicHost {
         finally { if (track != null) track.release(); }
     }
     private void close() {
-        running = false;
+        synchronized (this) { running = false; }
         for (String id : peers.keySet()) leave(id);
-        cleanup.shutdown();
+        synchronized (disposalLock) { cleanup.shutdown(); }
         try { mixer.join(1500); cleanup.awaitTermination(3, TimeUnit.SECONDS); }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         factory.dispose();

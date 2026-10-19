@@ -25,5 +25,7 @@ class WSGIServer:
 
 
 def stop_server():
+    from android_runtime.phone_mics import stop
+    stop()
     if server:
         server.shutdown()

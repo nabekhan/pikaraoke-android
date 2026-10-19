@@ -56,13 +56,13 @@
     state.lastInfo = info;
     const max = info.max || 4;
     const active = Array.isArray(info.active) ? info.active : [];
-    ui.slotCount.textContent = `${active.length} of ${max} live`;
+    ui.slotCount.textContent = `${active.length} of ${max} in use`;
     ui.slots.replaceChildren(...Array.from({ length: max }, (_, index) => {
       const slot = index + 1;
       const mic = active.find((item) => Number(item.slot) === slot);
       const li = document.createElement('li');
-      li.className = `slot${mic ? ' live' : ''}${mic && mic.muted ? ' muted' : ''}`;
-      li.innerHTML = `<span class="slot-number">Mic ${slot}</span><span class="slot-name">${mic ? escapeHtml(mic.name || 'Phone') : 'Open'}</span>`;
+      li.className = `slot${mic && mic.connected ? ' live' : ''}${mic && mic.muted ? ' muted' : ''}`;
+      li.innerHTML = `<span class="slot-number">Mic ${slot}</span><span class="slot-name">${mic ? escapeHtml(mic.name || 'Phone') : 'Open'}</span><span class="slot-state">${mic ? (mic.connected ? (mic.muted ? 'Muted' : 'Live') : 'Connecting') : ''}</span>`;
       return li;
     }));
     const now = info.now_playing || {};

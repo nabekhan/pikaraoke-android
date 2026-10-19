@@ -32,6 +32,19 @@
 - Songs and settings survive app updates.
 - Back up songs before uninstalling or clearing app data.
 
+## Phone microphones (prototype)
+
+- Up to four phones can sing through the TV at once.
+- Open **Mic** in the phone web interface.
+- First use: install that TV's CA certificate, then open the secure mic link.
+- On iPhone, also enable full trust under Settings → General → About → Certificate Trust Settings.
+- Phones need the same local network as the TV. Audio stays on that network.
+- Tap **Start mic**. Each phone has volume, mute, and reverb controls.
+- Keep the mic page open. **Add song** and **Queue** open in another tab.
+- Disconnect to free a slot. Lost connections expire automatically.
+- Each TV generates its own certificates. Private keys stay in app storage.
+- Real phone compatibility and audible latency on physical TVs still need testing.
+
 ## Updates
 
 - GitHub checks PiKaraoke and yt-dlp weekly.
@@ -60,7 +73,6 @@ export PIKARAOKE_BUILD_PYTHON="$(command -v python3)"
 ## Notes
 
 - Optional TV/USB microphone passthrough is untested on physical hardware.
-- Phones currently act as remotes, not microphones.
 - Raspberry Pi OS controls such as reboot and filesystem expansion are unavailable.
 - [Test results and limitations](docs/verification.md).
 - [GPL-3.0 license](LICENSE) · [Third-party components](THIRD_PARTY.md).

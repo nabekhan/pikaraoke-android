@@ -21,3 +21,5 @@ button:disabled { cursor:default; opacity:.55; }
 code { overflow-wrap:anywhere; font-size:11px; }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
 @media (max-height:780px) { .identity { margin-top:14px; }.mic-stage { min-height:278px; }.mic-toggle { height:196px; width:128px; }.slots { margin-top:16px; } }
+.slot.muted .slot-name::after { content:none; }
+.slot-state { display:block; min-height:12px; color:#a7a3aa; font-size:10px; }

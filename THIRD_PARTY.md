@@ -19,6 +19,16 @@ Their source, notices, and license terms remain with their respective projects:
 | FFmpeg and native libraries including Rubber Band | Distributed through the above FFmpeg AAR; source/build instructions in its repository; https://ffmpeg.org/ and https://breakfastquay.com/rubberband/ |
 | QuickJS | Distributed through youtubedl-android, https://bellard.org/quickjs/ |
 | Flask and Python dependencies | Exact installed versions in `app/constraints-android.txt`, source URLs and licenses in the wheels' packaged `.dist-info` metadata |
+| WebRTC Android SDK | `android-prefixed-stripped` 150.7871.01, https://github.com/webrtc-sdk/android; WebRTC BSD notices: https://github.com/webrtc-sdk/android/tree/main/Licenses |
+| Bouncy Castle | 1.86, https://github.com/bcgit/bc-java; MIT license, https://www.bouncycastle.org/licence.html |
+
+Phone audio uses JackTrip's documented DEFAULT packet layout (mono PCM16) over
+an unordered, unreliable WebRTC data channel. The packet parser and bounded
+receiver/mixer are implemented here; this does not bundle the JackTrip app or
+claim compatibility with its complete signaling protocol. Reference:
+https://github.com/jacktrip/jacktrip/blob/v3.0.1/docs/Documentation/NetworkProtocol.md.
+The interface follows Apple Music Sing's microphone layout using our own HTML,
+CSS, and SVG icons; no Apple artwork or application code is included.
 
 The original upstream tree is retained verbatim. The Android build generates
 adapted source only under `app/build/`; all integration changes are in this

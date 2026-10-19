@@ -14,12 +14,12 @@ public final class PhoneMicBuffer {
     private double phase;
     private boolean primed;
     private float sample;
-    public float gain = .65f;
-    public boolean muted;
-    public int reverb;
+    public volatile float gain = .65f;
+    public volatile boolean muted;
+    public volatile int reverb;
     private final float[] delay = new float[9600];
     private int delayIndex;
-    public long received, discarded, underruns;
+    public volatile long received, discarded, underruns;
 
     public synchronized boolean push(ByteBuffer source, long now) {
         ByteBuffer b = source.slice().order(ByteOrder.LITTLE_ENDIAN);

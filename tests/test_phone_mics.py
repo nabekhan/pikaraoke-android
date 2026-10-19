@@ -60,6 +60,7 @@ class PhoneMicRoutes(unittest.TestCase):
         cert = self.client.get('/mic/ca.crt')
         self.assertEqual(cert.data, self.ca.read_bytes())
         self.assertEqual(cert.headers['Cache-Control'], 'no-store')
+        cert.close()
         self.assertEqual(self.client.get('/mic/ca-key.pem').status_code, 404)
 
     def test_tls_origin_and_name_validation(self):
