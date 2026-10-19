@@ -17,7 +17,13 @@ android {
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
-    packaging { jniLibs { useLegacyPackaging = true } }
+    packaging {
+        jniLibs { useLegacyPackaging = true }
+        resources {
+            merges += ['META-INF/LICENSE.md', 'META-INF/NOTICE.md']
+            excludes += ['META-INF/versions/**', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA']
+        }
+    }
     splits { abi { enable true; reset(); include 'arm64-v8a', 'armeabi-v7a', 'x86_64'; universalApk true } }
     buildTypes {
         release {
@@ -68,7 +74,7 @@ tasks.register('prepareNotices', Copy) {
 tasks.named('preBuild') { dependsOn 'prepareUpstream', 'prepareDownloader', 'prepareNotices' }
 
 dependencies {
-    implementation 'io.github.webrtc-sdk:android:150.7871.01'
+    implementation 'io.github.webrtc-sdk:android-prefixed-stripped:150.7871.01'
     implementation 'org.bouncycastle:bcpkix-jdk18on:1.86'
     implementation 'org.mozilla.geckoview:geckoview:158.0.20261007201254'
     implementation 'io.github.junkfood02.youtubedl-android:library:0.18.1'

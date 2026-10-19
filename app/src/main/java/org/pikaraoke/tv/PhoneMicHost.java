@@ -9,7 +9,7 @@ import android.util.Log;
 import java.util.*;
 import java.util.concurrent.*;
 import org.json.*;
-import org.webrtc.*;
+import livekit.org.webrtc.*;
 
 /** Four independent data-only WebRTC peers mixed into one media output. */
 public final class PhoneMicHost {
