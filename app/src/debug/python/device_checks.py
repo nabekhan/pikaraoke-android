@@ -66,10 +66,10 @@ def run(context):
         deadline = time.monotonic() + 50
         while time.monotonic() < deadline:
             state = guest.get(root + '/api/now_playing').json()
-            if state.get('now_playing_position', 0) > 2:
+            if (state.get('now_playing_position') or 0) > 2:
                 break
             time.sleep(.5)
-        assert state.get('now_playing_position', 0) > 2, state
+        assert (state.get('now_playing_position') or 0) > 2, state
         assert host.post(root + '/api/pause').status_code == 200
         time.sleep(.5)
         assert k.playback_controller.is_paused
@@ -85,4 +85,3 @@ def run(context):
                            'ytdlp': ytdlp_version, 'upstream': str(k.ffmpeg_version)})
     finally:
         server.shutdown()
-

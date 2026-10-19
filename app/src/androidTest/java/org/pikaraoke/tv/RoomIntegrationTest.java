@@ -13,6 +13,8 @@ public class RoomIntegrationTest {
     @Test public void standaloneRoomDownloadsAndPlays() throws Exception {
         android.app.Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
+        if (android.os.Build.VERSION.SDK_INT >= 33)
+            instrumentation.getUiAutomation().grantRuntimePermission(context.getPackageName(), android.Manifest.permission.POST_NOTIFICATIONS);
         // Suppress only the welcome overlay, which is tested manually with D-pad.
         context.getSharedPreferences("host", 0).edit().putBoolean("welcomeShown", true).commit();
         instrumentation.startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -26,5 +28,21 @@ public class RoomIntegrationTest {
         String report = Python.getInstance().getModule("device_checks").callAttr("run", context).toString();
         android.util.Log.i("PiKaraokeIntegration", report);
         assertTrue(report, report.contains("\"download_to_file\": true"));
+        android.net.Uri roots = android.provider.DocumentsContract.buildRootsUri("org.pikaraoke.tv.songs");
+        try (android.database.Cursor cursor = context.getContentResolver().query(roots, new String[]{"title"}, null, null, null)) {
+            assertNotNull(cursor); assertTrue(cursor.moveToFirst()); assertEquals("PiKaraoke songs", cursor.getString(0));
+        }
+        java.io.File[] songs = AndroidPlatform.songs(context).listFiles((dir,name) -> name.endsWith(".mp4"));
+        assertNotNull(songs); assertTrue(songs.length > 0);
+        android.net.Uri document = android.provider.DocumentsContract.buildDocumentUri("org.pikaraoke.tv.songs", songs[0].getName());
+        try (java.io.InputStream stream = context.getContentResolver().openInputStream(document)) {
+            assertNotNull(stream); byte[] buffer = new byte[1024]; assertTrue(stream.read(buffer) > 100);
+        }
+        android.net.Uri outside = android.provider.DocumentsContract.buildDocumentUri("org.pikaraoke.tv.songs", "../../../../files/pikaraoke/config.ini");
+        try {
+            java.io.InputStream invalid = context.getContentResolver().openInputStream(outside);
+            if(invalid!=null) invalid.close();
+            fail("Document provider allowed traversal outside the library");
+        } catch(java.io.FileNotFoundException expected) { }
     }
 }
