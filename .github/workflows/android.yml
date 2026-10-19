@@ -38,6 +38,8 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
+      - name: Make room for the Android TV image and APKs
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -67,6 +69,8 @@ jobs:
           target: android-tv
           arch: x86_64
           profile: tv_1080p
+          disk-size: 2048M
+          ram-size: 2048M
           script: ./gradlew connectedDebugAndroidTest --console=plain
       - uses: actions/upload-artifact@v4
         if: always()

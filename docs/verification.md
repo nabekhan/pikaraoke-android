@@ -14,6 +14,9 @@ The app, Python service, media tools and browser all ran inside the APK.
 | External remote client | A separate host-side HTTP/Socket.IO client queued a song, changed its key to +2 during playback, and set volume to 0.4 |
 | File access | Android document-provider root/query/read succeeded; traversal outside the song directory was refused |
 | Online search | A YouTube search through the Android server returned real results |
+| Live YouTube download | The signed release downloaded `jNQXAC9IVRw` through the original queue and saved an MP4 in the Android song directory with no download errors |
+| Signed APK lifecycle | Password login, actual playback, remote Quit followed by reopening, and library persistence succeeded in the signed release |
+| APK update | Installing the final signed APK over the candidate preserved authentication, the library, and the exact SHA-256 of a saved song |
 | Runtime | PiKaraoke 1.23.0; FFmpeg 7.1.1; yt-dlp 2026.08.19; bundled QuickJS executed JavaScript |
 | APK signature | RSA 3072-bit distribution key; APK Signature Scheme v2 verification succeeded |
 
@@ -33,10 +36,16 @@ Physical TV hardware, USB microphone routing, audible latency/echo cancellation,
 32-bit ARM execution, x86-64 execution, and real phone/Wi-Fi connectivity have
 not been physically verified. The external-client check used an ADB TCP tunnel.
 Native libraries for all three advertised ABIs are present in their APKs.
+All four release APKs passed APK v2 signature verification with certificate
+SHA-256 `feded228e772fc3cf25cabfbaf0daf587d996fd8672da4bdc61142c592368104`.
+
+GitHub's optional x86-64 device-test job initially could not boot its emulator
+because the hosted runner ran out of disk space. The workflow now frees unused
+hosted tools and bounds the AVD partition size. This failure occurred before app
+installation; it is not counted as Android runtime verification.
 
 Raw reports and the actual TV playback screenshot are retained locally under
-`artifacts/verification/`. Release-specific persistence and online-download
-results are added after the signed-APK check.
+`artifacts/verification/`. `release-result.json` records the signed-APK checks.
 
 The upstream source is pinned to
 `48c7122e16784417e43ae0c4f1d744ed2a0b6492` (PiKaraoke 1.23.0).

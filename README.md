@@ -157,5 +157,7 @@ See `docs/verification.md` for the evidence and limitations of the release.
 
 ## Third-party components
 
-See [THIRD_PARTY.md](THIRD_PARTY.md). Upstream and bundled dependencies retain
-their own copyright notices and licenses.
+The Android integration is licensed under GPL-3.0; see [LICENSE](LICENSE).
+See [THIRD_PARTY.md](THIRD_PARTY.md) for dependency sources. Upstream and bundled
+dependencies retain their own copyright notices and licenses. The APK includes
+these notices under `assets/licenses/`.

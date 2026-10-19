@@ -1,5 +1,10 @@
 # Components and corresponding source
 
+This Android integration is distributed under GPL-3.0; see `LICENSE`. Its source
+and build instructions are at https://github.com/nabekhan/pikaraoke-android.
+Clone with `--recurse-submodules` to obtain the exact upstream source dependency;
+GitHub's automatic source ZIP does not include Git submodule contents.
+
 This Android integration packages these independently maintained components.
 Their source, notices, and license terms remain with their respective projects:
 
