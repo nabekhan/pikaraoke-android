@@ -24,6 +24,8 @@ The first launch shows a random per-install **host password**. It is separate
 from your Android/device password. Open room settings on a phone to change it.
 The TV's Host password option shows the initial password, which becomes stale
 if you change it. The app never contains a shared hardcoded password.
+If you forget the host password, use **Host password → Set host password** on
+the TV to replace it without deleting songs or settings.
 
 The room continues serving phones and downloading while you visit another app.
 Use **Stop room and exit** to stop the server and release its wake lock. Android

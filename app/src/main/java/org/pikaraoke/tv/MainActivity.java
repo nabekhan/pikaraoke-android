@@ -146,7 +146,8 @@ public final class MainActivity extends Activity {
                         String password = getSharedPreferences("host", 0).getString("initialPassword", "");
                         new AlertDialog.Builder(this).setTitle("Host password")
                             .setMessage("Initial password: " + password + "\n\nIf you changed it in room settings, use your new password. Host access is separate from your device password.")
-                            .setPositiveButton("Close", null).show(); break;
+                            .setPositiveButton("Close", null)
+                            .setNeutralButton("Set host password", (d,w) -> changePassword()).show(); break;
                     case 7:
                         if (!AndroidAudio.hasPermission(this)) requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 3);
                         else if (KaraokeService.instance != null) { KaraokeService.instance.enableMicrophoneForeground(); showRemote(); }
@@ -159,6 +160,22 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Song files")
             .setMessage("Your songs are saved as files in:\n" + AndroidPlatform.songs(this) + "\n\nUse a file manager that supports Android document providers to copy files from PiKaraoke songs.")
             .setPositiveButton("Close", null).show();
+    }
+    private void changePassword() {
+        EditText input = new EditText(this);
+        input.setSingleLine();
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Set host password")
+            .setMessage("Use at least 8 characters. Phones will need to sign in again for host controls.")
+            .setView(input).setPositiveButton("Save password", null).setNegativeButton("Cancel", null).create();
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String password=input.getText().toString();
+            if(password.length()<8) { input.setError("Use at least 8 characters"); return; }
+            if(KaraokeService.instance==null) { input.setError("Open the room before changing its password"); return; }
+            KaraokeService.call("set_host_password", password);
+            dialog.dismiss();
+        }));
+        dialog.show();
     }
     private void importFiles() {
         Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE);

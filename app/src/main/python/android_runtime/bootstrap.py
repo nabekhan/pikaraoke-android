@@ -206,7 +206,6 @@ def network_changed():
         k.ip = str(AndroidPlatform.localIp(_context))
         k.url = f'http://{k.ip}:{k.port}'
         k.generate_qr_code()
-        k.socketio.server.eio.cors_allowed_origins = [k.url, f'http://127.0.0.1:{k.port}', f'http://localhost:{k.port}']
         k.socketio.emit('android_network_changed', {'url': k.url})
 
 
@@ -226,3 +225,11 @@ def native_action(action):
 def host_password():
     """Only exposed to native code on the TV, never an HTTP endpoint."""
     return str(_context.getSharedPreferences('host', 0).getString('initialPassword', '')) if _context else ''
+
+
+def set_host_password(password):
+    if not ready():
+        raise RuntimeError('The room is still starting')
+    with _preferences_lock:
+        _backend.app.config['ADMIN_AUTH'].set_password(password)
+        _context.getSharedPreferences('host', 0).edit().putString('initialPassword', password).apply()

@@ -44,6 +44,10 @@ def run(context):
     server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(source_dir)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     existing = set(Path(k.download_path).glob('*.mp4'))
+    saved_download_args = k.download_manager._additional_ytdl_args
+    # A direct HTTP fixture has no extractor-provided height metadata, unlike
+    # YouTube. Override only its format selector through the supported option.
+    k.download_manager._additional_ytdl_args = ((saved_download_args or '') + ' -f best').strip()
     try:
         assert guest.post(root + '/api/download', json={
             'song_url': f'http://127.0.0.1:{server.server_port}/{sample.name}',
@@ -85,3 +89,4 @@ def run(context):
                            'ytdlp': ytdlp_version, 'upstream': str(k.ffmpeg_version)})
     finally:
         server.shutdown()
+        k.download_manager._additional_ytdl_args = saved_download_args
