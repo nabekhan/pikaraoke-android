@@ -38,7 +38,9 @@ on main, the release workflow tests and publishes the resulting app.
 4. Another fresh job has repository write permission but no signing secrets. It
    verifies every signed asset hash, uploads a managed draft release, verifies
    GitHub's upload digests, commits the tested data-only plan with a fast-forward
-   main update, and publishes the release. If main moved during testing, it aborts.
+   main update, and publishes the release as GitHub's latest release. The signed
+   universal APK is also uploaded as `app.apk`, with the same verified hash.
+   If main moved during testing, it aborts.
 
 Builds and emulator tests never receive signing secrets or repository write
 permission. Third-party actions are pinned to full commit IDs. The signing
@@ -51,8 +53,9 @@ version.json holds the Android version counter. Automated releases increment it
 and use names such as 1.23.0-android.2, where the first part is the PiKaraoke
 version and the last number is the Android version code. The distribution key
 remains the same as v0.1.0, allowing an in-place update that retains songs and
-settings. Releases remain marked as prereleases because physical TV and
-microphone compatibility depends on hardware.
+settings. Published releases are marked as latest so the permanent download
+link works. Phone microphone support remains a prototype; physical TV and
+microphone compatibility still need hardware testing.
 
 When upstream and pins have not changed, scheduled and ordinary manual checks
 stop without building or publishing. Select force_release when dispatching the
@@ -63,12 +66,22 @@ failure during publication, rerun the workflow: a managed draft can be replaced,
 and an already-committed version with an unpublished release resumes at that
 version rather than allocating another one. A rerun of an already successful
 workflow does not publish it twice. A main-branch race requires a fresh run.
+If publication finishes but the latest-release check fails, a fresh workflow
+run verifies the existing assets and restores the latest link without rebuilding
+or replacing public downloads. It checks the signing report, checksums, GitHub
+asset digests, and the universal alias before changing the release status.
 
-Each release includes all four APKs, SHA256SUMS, signing-verification.json,
+Each release includes all four versioned APKs, the universal alias `app.apk`,
+SHA256SUMS, signing-verification.json,
 update-plan.json, and a complete source archive containing the exact upstream
 source. Test reports are retained as workflow artifacts for seven days.
 Installing an updated APK on the TV is manual; this workflow does not silently
 install software on devices.
+
+The permanent universal download is
+https://github.com/nabekhan/pikaraoke-android/releases/latest/download/app.apk.
+Publication verifies that the new release is the one returned by GitHub's
+latest-release endpoint, after all assets are uploaded.
 
 ## Signing configuration
 

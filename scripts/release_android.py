@@ -104,6 +104,67 @@ def upload_asset(release, path):
     assert uploaded["digest"] == "sha256:" + hashlib.sha256(data).hexdigest()
 
 
+def read_release_asset(tag, asset):
+    # Public release metadata only; never send a repository token to redirects.
+    url = f"https://github.com/{REPOSITORY}/releases/download/" + "/".join(
+        urllib.parse.quote(value, safe="") for value in (tag, asset["name"])
+    )
+    assert 0 < asset["size"] <= 1000000, "Unexpected metadata size"
+    with urllib.request.urlopen(url, timeout=60) as response:
+        data = response.read(1000001)
+    assert len(data) == asset["size"]
+    assert asset["digest"] == "sha256:" + hashlib.sha256(data).hexdigest()
+    return data
+
+
+def repair_latest(plan_path):
+    plan = read_json(plan_path)
+    assert git("rev-parse", "HEAD") == plan["base_sha"]
+    validate_plan(plan, read_json("version.json"))
+    assert plan.get("repair_latest")
+    tag = plan["release_tag"]
+    release = find_release(tag)
+    assert release and not release["draft"] and MARKER in (release["body"] or "")
+    assert release["tag_name"] == tag
+    names = {f"pikaraoke-tv-{plan['version']['version_name']}-{abi}.apk" for abi in ABIS}
+    expected = names | {"app.apk", "SHA256SUMS", "signing-verification.json",
+                        "update-plan.json", "source-with-upstream.tar.gz"}
+    assets = {asset["name"]: asset for asset in release["assets"]}
+    assert len(assets) == len(release["assets"]) and set(assets) == expected
+    for asset in assets.values():
+        assert asset["state"] == "uploaded" and asset["size"] > 0
+        assert re.fullmatch(r"sha256:[0-9a-f]{64}", asset["digest"])
+    checksums = {}
+    for line in read_release_asset(tag, assets["SHA256SUMS"]).decode().splitlines():
+        checksum, name = line.split("  ")
+        assert name not in checksums and re.fullmatch(r"[0-9a-f]{64}", checksum)
+        checksums[name] = checksum
+    assert set(checksums) == expected - {"SHA256SUMS"}
+    for name, checksum in checksums.items():
+        assert assets[name]["digest"] == "sha256:" + checksum
+    report = json.loads(read_release_asset(tag, assets["signing-verification.json"]))
+    assert report["certificate_sha256"] == CERTIFICATE
+    assert report["version"] == plan["version"] and report["upstream_sha"] == plan["upstream_sha"]
+    assert len(report["apks"]) == len(names) and {r["name"] for r in report["apks"]} == names
+    for record in report["apks"]:
+        asset = assets[record["name"]]
+        assert asset["digest"] == "sha256:" + record["sha256"] and asset["size"] == record["bytes"]
+    universal = assets[f"pikaraoke-tv-{plan['version']['version_name']}-universal.apk"]
+    assert assets["app.apk"]["digest"] == universal["digest"]
+    assert assets["app.apk"]["size"] == universal["size"]
+    assert api(REPOSITORY + "/git/ref/heads/main")["object"]["sha"] == plan["base_sha"]
+    published = api(REPOSITORY + "/releases/" + str(release["id"]), "PATCH", {
+        "draft": False, "prerelease": False, "make_latest": "true",
+    })
+    assert not published["draft"] and not published["prerelease"]
+    latest = api(REPOSITORY + "/releases/latest")
+    assert latest["id"] == release["id"]
+    assert {a["name"]: (a["size"], a["digest"], a["state"]) for a in latest["assets"]} == {
+        name: (a["size"], a["digest"], a["state"]) for name, a in assets.items()
+    }, "Release assets changed during repair"
+    print(published["html_url"])
+
+
 def publish(plan_path, signed, archive):
     plan = read_json(plan_path)
     assert git("rev-parse", "HEAD") == plan["base_sha"]
@@ -121,6 +182,12 @@ def publish(plan_path, signed, archive):
         path = signed / record["name"]
         assert path.is_file() and not path.is_symlink()
         assert digest(path) == record["sha256"] and path.stat().st_size == record["bytes"]
+    universal_name = f"pikaraoke-tv-{plan['version']['version_name']}-universal.apk"
+    universal_record = next(record for record in report["apks"] if record["name"] == universal_name)
+    # The stable download is a copy of the verified, signed universal APK.
+    # Keep it inside the draft until every asset has passed upload verification.
+    shutil.copyfile(signed / universal_name, signed / "app.apk")
+    assert digest(signed / "app.apk") == universal_record["sha256"]
     source = Path(archive)
     assert source.is_file() and not source.is_symlink()
     shutil.copyfile(source, signed / "source-with-upstream.tar.gz")
@@ -152,6 +219,7 @@ def publish(plan_path, signed, archive):
         f"PiKaraoke source: {plan['upstream_sha']}\n\n"
         f"Android version: {plan['version']['version_name']} "
         f"(code {plan['version']['version_code']}).\n\n"
+        f"Universal APK: https://github.com/{REPOSITORY}/releases/latest/download/app.apk\n\n"
         "The Android TV integration test and release lint passed before signing. "
         "All APKs use the original distribution certificate. Downloads and settings survive updates.\n\n"
         "Choose arm64-v8a for 64-bit ARM, armeabi-v7a for 32-bit ARM, or universal if unsure. "
@@ -172,28 +240,37 @@ def publish(plan_path, signed, archive):
         release = api(REPOSITORY + "/releases", "POST", {
             "tag_name": tag, "target_commitish": commit_sha,
             "name": "PiKaraoke TV " + plan["version"]["version_name"],
-            "body": body, "draft": True, "prerelease": True,
+            "body": body, "draft": True, "prerelease": False,
         })
     for path in sorted(signed.iterdir()):
         upload_asset(release, path)
     # Merge the tested data-only update after every release asset is verified.
     if not plan["resume"]:
         api(REPOSITORY + "/git/refs/heads/main", "PATCH", {"sha": commit_sha, "force": False})
-    published = api(REPOSITORY + "/releases/" + str(release["id"]), "PATCH", {"draft": False})
-    assert not published["draft"]
+    published = api(REPOSITORY + "/releases/" + str(release["id"]), "PATCH", {
+        "draft": False, "prerelease": False, "make_latest": "true",
+    })
+    assert not published["draft"] and not published["prerelease"]
+    latest = api(REPOSITORY + "/releases/latest")
+    assert latest["id"] == published["id"], "Published release is not GitHub's latest release"
     print(published["html_url"])
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("operation", choices=["sign", "publish"])
+    parser.add_argument("operation", choices=["sign", "publish", "repair-latest"])
     parser.add_argument("plan")
-    parser.add_argument("source")
-    parser.add_argument("destination")
+    parser.add_argument("source", nargs="?")
+    parser.add_argument("destination", nargs="?")
     args = parser.parse_args()
-    if args.operation == "sign":
+    if args.operation == "repair-latest":
+        assert args.source is None and args.destination is None
+        repair_latest(args.plan)
+    elif args.operation == "sign":
+        assert args.source and args.destination
         sign(args.plan, args.source, args.destination)
     else:
+        assert args.source and args.destination
         publish(args.plan, args.source, args.destination)
 
 

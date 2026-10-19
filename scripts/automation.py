@@ -95,6 +95,12 @@ def validate_plan(plan, current_version=None):
                     assert PIN.fullmatch(line), "Dependency updates must contain version pins only"
     version = plan["version"]
     validate_version(version)
+    if plan.get("repair_latest"):
+        assert not plan["publish"] and not plan["resume"] and not plan["files"]
+        assert version.get("automated") is True
+        assert version["release_tag"] == plan["release_tag"]
+        assert version["upstream_sha"] == plan["upstream_sha"]
+        assert current_version is None or version == current_version
     if plan["publish"]:
         assert version.get("automated") is True
         assert version["release_tag"] == plan["release_tag"]
@@ -192,6 +198,23 @@ def make_plan(force=False):
             plan.update(publish=True, resume=True, release_tag=current["release_tag"])
             validate_plan(plan, current)
             return plan
+        # A publication can finish but fail before latest-release confirmation.
+        # Repair the existing assets without rebuilding or allocating a version.
+        if current.get("universal_apk_alias") or any(asset["name"] == "app.apk" for asset in existing.get("assets", [])):
+            assets = {asset["name"]: asset for asset in existing["assets"]}
+            assert len(assets) == len(existing["assets"]), "Duplicate release assets"
+            alias = assets.get("app.apk")
+            universal = assets.get(f"pikaraoke-tv-{current['version_name']}-universal.apk")
+            assert alias and universal, "Published universal download is missing"
+            assert alias["state"] == universal["state"] == "uploaded"
+            assert alias["size"] == universal["size"] > 0
+            assert re.fullmatch(r"sha256:[0-9a-f]{64}", alias["digest"])
+            assert alias["digest"] == universal["digest"], "Published universal alias differs"
+            latest = api(REPOSITORY + "/releases/latest", missing_ok=True)
+            if existing["prerelease"] or not latest or latest["id"] != existing["id"]:
+                plan.update(repair_latest=True, release_tag=current["release_tag"])
+                validate_plan(plan, current)
+                return plan
         if current.get("automation_run_id") == os.environ.get("GITHUB_RUN_ID"):
             return plan  # A successful run was rerun; never publish it twice.
     upstream = api(UPSTREAM)
@@ -231,6 +254,7 @@ def make_plan(force=False):
     version = {
         "version_code": code, "version_name": f"{upstream_version}-android.{code}",
         "automated": True, "upstream_sha": upstream_sha, "yt_dlp_version": yt_version,
+        "universal_apk_alias": True,
         "automation_run_id": os.environ["GITHUB_RUN_ID"],
     }
     version["release_tag"] = "v" + version["version_name"]
@@ -269,6 +293,7 @@ def main():
         if os.environ.get("GITHUB_OUTPUT"):
             with open(os.environ["GITHUB_OUTPUT"], "a") as output:
                 output.write("publish=" + str(plan["publish"]).lower() + "\n")
+                output.write("repair_latest=" + str(plan.get("repair_latest", False)).lower() + "\n")
                 output.write("base_sha=" + plan["base_sha"] + "\n")
         print(json.dumps({
             "publish": plan["publish"], "resume": plan["resume"],

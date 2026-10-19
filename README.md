@@ -8,7 +8,8 @@
 ## Install
 
 - Requires Android 8.0 or later.
-- Download an APK from [Releases](https://github.com/nabekhan/pikaraoke-android/releases).
+- Download the [latest universal APK](https://github.com/nabekhan/pikaraoke-android/releases/latest/download/app.apk), or choose a smaller APK from [Releases](https://github.com/nabekhan/pikaraoke-android/releases).
+- In Downloader, enter **5094851** or [aftv.news/5094851](https://aftv.news/5094851).
 - Use `arm64-v8a` for 64-bit ARM, `armeabi-v7a` for 32-bit ARM, or `universal` if unsure.
 - `x86_64` is available for compatible devices and emulators.
 - Sideload the APK and open **PiKaraoke TV**.
