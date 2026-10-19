@@ -4,6 +4,7 @@ from werkzeug.serving import make_server
 
 Greenlet = Thread
 server = None
+servers_ready = False
 
 
 def spawn(function, *args, **kwargs):
@@ -17,14 +18,17 @@ class WSGIServer:
         self.httpd = make_server(*address, app, threaded=True)
 
     def start(self):
-        global server
+        global server, servers_ready
         server = self.httpd
-        spawn(self.httpd.serve_forever)
         from android_runtime.phone_mics import start_https
         start_https(self.httpd.app)
+        spawn(self.httpd.serve_forever)
+        servers_ready = True
 
 
 def stop_server():
+    global servers_ready
+    servers_ready = False
     from android_runtime.phone_mics import stop
     stop()
     if server:

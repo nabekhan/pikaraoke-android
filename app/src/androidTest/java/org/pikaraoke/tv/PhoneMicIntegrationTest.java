@@ -20,9 +20,10 @@ public class PhoneMicIntegrationTest {
     private static final int TIMEOUT = 15;
     static class Observer implements PeerConnection.Observer {
         final CompletableFuture<Void> ice = new CompletableFuture<>();
+        volatile PeerConnection.IceConnectionState iceState=PeerConnection.IceConnectionState.NEW;
         public void onIceGatheringChange(PeerConnection.IceGatheringState s) { if(s==PeerConnection.IceGatheringState.COMPLETE) ice.complete(null); }
         public void onSignalingChange(PeerConnection.SignalingState s) { }
-        public void onIceConnectionChange(PeerConnection.IceConnectionState s) { }
+        public void onIceConnectionChange(PeerConnection.IceConnectionState s) { iceState=s; }
         public void onIceConnectionReceivingChange(boolean r) { }
         public void onIceCandidate(IceCandidate c) { }
         public void onIceCandidatesRemoved(IceCandidate[] c) { }
@@ -65,7 +66,7 @@ public class PhoneMicIntegrationTest {
                 setRemote.set.get(TIMEOUT,TimeUnit.SECONDS);
                 long deadline=System.currentTimeMillis()+15000;
                 while(channel.state()!=DataChannel.State.OPEN && System.currentTimeMillis()<deadline) Thread.sleep(20);
-                assertEquals(DataChannel.State.OPEN,channel.state());
+                assertEquals("sender ICE="+observer.iceState+"; receiver="+host.status(),DataChannel.State.OPEN,channel.state());
             }
             try { host.join("Fifth phone"); fail("A fifth microphone was admitted"); }
             catch(IllegalStateException expected) { }

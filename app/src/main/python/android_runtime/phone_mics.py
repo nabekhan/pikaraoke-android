@@ -22,7 +22,7 @@ def _address():
 
 
 def secure_url():
-    return f'https://{_address()}:8443/mic'
+    return f'https://{_address()}:8444/mic'
 
 
 def refresh_certificate():
@@ -162,7 +162,8 @@ def start_https(app):
     global _server
     from werkzeug.serving import make_server
     from android_runtime.compat import spawn
-    _server = make_server('0.0.0.0', 8443, app, threaded=True, ssl_context=_ssl_context)
+    refresh_certificate()
+    _server = make_server('0.0.0.0', 8444, app, threaded=True, ssl_context=_ssl_context)
     spawn(_server.serve_forever)
 
 

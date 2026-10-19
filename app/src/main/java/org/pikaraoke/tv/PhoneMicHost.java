@@ -61,6 +61,7 @@ public final class PhoneMicHost {
         for (Peer p : peers.values()) synchronized (p) {
             active.put(new JSONObject().put("slot", p.slot).put("name", p.name)
                 .put("muted", p.pcm.muted).put("connected", p.connected)
+                .put("ice_state", p.iceState.toString())
                 .put("received_packets", p.pcm.received).put("buffer_frames", p.pcm.queuedFrames()));
         }
         return new JSONObject().put("max", MAX_MICS).put("active", active)
@@ -129,6 +130,7 @@ public final class PhoneMicHost {
         volatile PeerConnection connection;
         volatile DataChannel channel;
         volatile boolean connected;
+        volatile PeerConnection.IceConnectionState iceState = PeerConnection.IceConnectionState.NEW;
         Peer(String id, int slot, String name) { this.id = id; this.slot = slot; this.name = name; }
         PeerConnection requireConnection() {
             if (connection == null || !peers.containsKey(id)) throw new IllegalArgumentException("Microphone disconnected");
@@ -145,27 +147,44 @@ public final class PhoneMicHost {
             if (oldChannel != null) { oldChannel.unregisterObserver(); oldChannel.close(); oldChannel.dispose(); }
             if (oldConnection != null) { oldConnection.close(); oldConnection.dispose(); }
         }
-        public synchronized void onDataChannel(DataChannel data) {
-            if (!data.label().equals("audio") || channel != null || !peers.containsKey(id)) { data.close(); return; }
-            channel = data;
-            connected = data.state() == DataChannel.State.OPEN;
-            data.registerObserver(new DataChannel.Observer() {
-                public void onBufferedAmountChange(long previous) { }
-                public void onStateChange() { synchronized (Peer.this) {
-                    if (channel != data) return;
-                    connected = data.state() == DataChannel.State.OPEN;
-                    if (connected) heartbeat = System.nanoTime();
-                    if (data.state() == DataChannel.State.CLOSED) leave(id);
-                } }
-                public void onMessage(DataChannel.Buffer message) {
-                    if (message.binary && message.data.remaining() <= 2064) pcm.push(message.data, System.nanoTime());
+        public void onDataChannel(DataChannel data) {
+            // WebRTC invokes observers on its signaling thread. Never wait on a
+            // monitor held across a synchronous JNI call back to that thread.
+            enqueue(() -> {
+                if (!data.label().equals("audio") || channel != null || !peers.containsKey(id)) {
+                    data.close(); data.dispose(); return;
                 }
+                channel = data;
+                data.registerObserver(new DataChannel.Observer() {
+                    public void onBufferedAmountChange(long previous) { }
+                    public void onStateChange() { enqueue(() -> updateState(data)); }
+                    public void onMessage(DataChannel.Buffer message) {
+                        if (message.binary && message.data.remaining() <= 2064) pcm.push(message.data, System.nanoTime());
+                    }
+                });
+                updateState(data);
             });
+        }
+        private void updateState(DataChannel data) {
+            if (channel != data) return;
+            connected = data.state() == DataChannel.State.OPEN;
+            if (connected) heartbeat = System.nanoTime();
+            if (data.state() == DataChannel.State.CLOSED) leave(id);
+        }
+        private void enqueue(Runnable action) {
+            try { cleanup.execute(action); }
+            catch (RejectedExecutionException ignored) {
+                // A final native callback can race room shutdown. Dispose its
+                // retained channel off the native callback thread too.
+                new Thread(action, "PiKaraoke mic disposal").start();
+            }
         }
         public void onIceGatheringChange(PeerConnection.IceGatheringState state) {
             if (state == PeerConnection.IceGatheringState.COMPLETE) ice.complete(null);
         }
         public void onIceConnectionChange(PeerConnection.IceConnectionState state) {
+            iceState = state;
+            Log.i("PiKaraokePhoneMic", "Slot " + slot + " ICE " + state);
             if (state == PeerConnection.IceConnectionState.FAILED || state == PeerConnection.IceConnectionState.CLOSED) leave(id);
             if (state == PeerConnection.IceConnectionState.DISCONNECTED) {
                 try {

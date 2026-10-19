@@ -26,7 +26,8 @@ def status():
 
 
 def ready():
-    return _backend is not None and 'KARAOKE_INSTANCE' in _backend.app.config
+    from android_runtime import compat
+    return _error is None and compat.servers_ready and _backend is not None and 'KARAOKE_INSTANCE' in _backend.app.config
 
 
 def install_process_adapter(context):

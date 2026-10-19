@@ -16,7 +16,7 @@ def check_phone_microphones(context, guest, root):
     ca = Path(str(context.getNoBackupFilesDir())) / 'phone-mic-tls/ca.crt'
     trusted = Path(str(context.getCacheDir())) / 'qa-mic-ca.pem'
     trusted.write_text(ssl.DER_cert_to_PEM_cert(ca.read_bytes()))
-    secure = 'https://127.0.0.1:8443'
+    secure = 'https://127.0.0.1:8444'
     tokens = []
     try:
         for path in ['/mic', '/static/phone-mic.js', '/static/phone-mic-worklet.js', '/static/phone-mic.css']:
