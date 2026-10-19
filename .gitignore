@@ -1,0 +1,17 @@
+.gradle/
+.idea/
+build/
+app/build/
+local.properties
+result*
+.venv/
+__pycache__/
+*.pyc
+*.jks
+*.keystore
+artifacts/
+.android/
+.android-sdk
+.android-*-sdk
+.cache/
+.build-python

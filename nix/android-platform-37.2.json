@@ -1,0 +1,17 @@
+{
+  "archives": [{
+    "arch": "all", "os": "all",
+    "sha1": "4bec12a02162ff6852df50b5fcf8ee762b050966",
+    "size": 68056472,
+    "url": "https://dl.google.com/android/repository/platform-37.2_r01.zip"
+  }],
+  "displayName": "Android SDK Platform 37.2",
+  "license": "android-sdk-license",
+  "name": "platforms", "path": "platforms/android-37.2", "revision": "37.2",
+  "revision-details": {"major:0": "1"},
+  "type-details": {
+    "api-level:0": "37.2", "base-extension:3": "true", "codename:1": {},
+    "element-attributes": {"xsi:type": "ns11:platformDetailsType"},
+    "extension-level:2": "24", "layoutlib:4": {"element-attributes": {"api": "15"}}
+  }
+}

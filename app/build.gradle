@@ -1,0 +1,67 @@
+plugins { id 'com.android.application'; id 'com.chaquo.python' }
+
+android {
+    namespace 'org.pikaraoke.tv'
+    compileSdk { version = release(37) { minorApiLevel = 2 } }
+    sourceSets.main.res.srcDir 'build/generated/ytdlp/res'
+    defaultConfig {
+        applicationId 'org.pikaraoke.tv'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' }
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    packaging { jniLibs { useLegacyPackaging = true } }
+    splits { abi { enable true; reset(); include 'arm64-v8a', 'armeabi-v7a', 'x86_64'; universalApk true } }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv('PIKARAOKE_KEYSTORE')) {
+                signingConfigs.create('distribution') {
+                    storeFile file(System.getenv('PIKARAOKE_KEYSTORE'))
+                    storePassword System.getenv('PIKARAOKE_STORE_PASSWORD')
+                    keyAlias System.getenv('PIKARAOKE_KEY_ALIAS') ?: 'pikaraoke'
+                    keyPassword System.getenv('PIKARAOKE_KEY_PASSWORD')
+                }
+                signingConfig signingConfigs.distribution
+            }
+        }
+    }
+}
+
+chaquopy {
+    defaultConfig {
+        version = '3.11'
+        if (System.getenv('PIKARAOKE_BUILD_PYTHON')) buildPython(System.getenv('PIKARAOKE_BUILD_PYTHON'))
+        pip { install '-r', 'requirements-android.txt' }
+        extractPackages 'pikaraoke'
+    }
+    sourceSets { main { srcDir 'build/generated/python' } }
+}
+tasks.register('prepareUpstream', Exec) {
+    workingDir rootDir
+    commandLine System.getenv('PIKARAOKE_BUILD_PYTHON') ?: 'python3', 'scripts/prepare_upstream.py'
+    inputs.dir rootProject.file('upstream/pikaraoke')
+    inputs.file rootProject.file('scripts/prepare_upstream.py')
+    inputs.file rootProject.file('app/src/main/assets/android-tv.js')
+    outputs.dir layout.buildDirectory.dir('generated/python')
+}
+tasks.matching { it.name == 'generateReleasePythonRequirements' || it.name == 'generateDebugPythonRequirements' || it.name.contains('PythonSources') }.configureEach { dependsOn 'prepareUpstream' }
+tasks.register('prepareDownloader', Exec) {
+    workingDir rootDir
+    commandLine System.getenv('PIKARAOKE_BUILD_PYTHON') ?: 'python3', 'scripts/fetch_ytdlp.py'
+    inputs.file rootProject.file('scripts/fetch_ytdlp.py')
+    outputs.dir layout.buildDirectory.dir('generated/ytdlp/res')
+}
+tasks.named('preBuild') { dependsOn 'prepareUpstream', 'prepareDownloader' }
+
+dependencies {
+    implementation 'org.mozilla.geckoview:geckoview:158.0.20261007201254'
+    implementation 'io.github.junkfood02.youtubedl-android:library:0.18.1'
+    implementation 'io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}
