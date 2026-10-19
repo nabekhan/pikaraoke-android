@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Verify the pinned yt-dlp zipapp, overriding the AAR's older raw resource."""
 import hashlib
+import json
 from pathlib import Path
 import urllib.request
 
-VERSION = '2026.08.19'
-SHA256 = '1fa6733c37ea6fb51c99ad8fe785e7b7e5f3246c9b980230329d4fb72ed8d4d6'
 ROOT = Path(__file__).resolve().parents[1]
+PIN = json.loads((ROOT / 'ytdlp.json').read_text())
+VERSION = PIN['version']
+SHA256 = PIN['sha256']
 DEST = ROOT / 'app/build/generated/ytdlp/res/raw/ytdlp'
 
 

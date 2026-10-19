@@ -1,5 +1,7 @@
 plugins { id 'com.android.application'; id 'com.chaquo.python' }
 
+def androidVersion = new groovy.json.JsonSlurper().parse(rootProject.file('version.json'))
+
 android {
     namespace 'org.pikaraoke.tv'
     compileSdk { version = release(37) { minorApiLevel = 2 } }
@@ -9,8 +11,8 @@ android {
         applicationId 'org.pikaraoke.tv'
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName '0.1.0'
+        versionCode (androidVersion.version_code as int)
+        versionName androidVersion.version_name
         ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' }
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -55,6 +57,7 @@ tasks.register('prepareDownloader', Exec) {
     workingDir rootDir
     commandLine System.getenv('PIKARAOKE_BUILD_PYTHON') ?: 'python3', 'scripts/fetch_ytdlp.py'
     inputs.file rootProject.file('scripts/fetch_ytdlp.py')
+    inputs.file rootProject.file('ytdlp.json')
     outputs.dir layout.buildDirectory.dir('generated/ytdlp/res')
 }
 tasks.register('prepareNotices', Copy) {

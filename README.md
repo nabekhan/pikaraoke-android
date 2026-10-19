@@ -68,7 +68,12 @@ expected source text and fails on conflicts. The submodule remains pristine.
 Android-specific paths, native executables, audio, network addresses, service
 lifecycle, and browser hosting live in `app/src/main/`.
 
-To update upstream deliberately:
+The [automatic release workflow](docs/automation.md) checks upstream and yt-dlp weekly,
+runs the Android TV integration test, and publishes signed APKs when an update passes.
+It also releases reviewed app/build changes merged to main. Use GitHub Actions to
+request an immediate check or a forced rebuild; no local toolchain is needed.
+
+To update upstream manually:
 
 ```sh
 git submodule update --init --recursive
@@ -83,7 +88,7 @@ git commit -m "Update pinned PiKaraoke upstream"
 
 Python runtime requirements and their transitive versions are pinned in
 `app/requirements-android.txt` and `app/constraints-android.txt`. The downloader
-zipapp is pinned by version and SHA-256 in `scripts/fetch_ytdlp.py`; it overrides
+zipapp is pinned by version and SHA-256 in `ytdlp.json`; it overrides
 the older resource in the native runtime library. The upstream Update yt-dlp
 action uses the Android library's updater; it does not try to install pip into
 Android. Updating yt-dlp may be needed when YouTube changes its service.
@@ -128,7 +133,8 @@ build-tools 36.0.0, set `ANDROID_HOME`, and run the same Gradle wrapper commands
 Gradle downloads Maven/Python dependencies and the checksum-verified downloader
 on the build machine. They are bundled into the resulting APK.
 
-Release signing is opt-in through environment variables:
+The automatic workflow signs on an isolated GitHub runner using environment secrets.
+For local builds, release signing is opt-in through environment variables:
 
 ```
 PIKARAOKE_KEYSTORE

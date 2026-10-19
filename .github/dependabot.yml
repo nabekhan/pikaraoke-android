@@ -1,9 +1,6 @@
 version: 2
 updates:
-  - package-ecosystem: gitsubmodule
-    directory: /
-    schedule:
-      interval: weekly
+  # The tested release workflow owns upstream and yt-dlp updates.
   - package-ecosystem: gradle
     directory: /
     schedule:
