@@ -10,6 +10,16 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class RoomIntegrationTest {
+    private static void screenshot(android.app.Instrumentation instrumentation, String name) throws java.io.IOException {
+        // Gradle removes app storage after instrumentation. Keep captures in the
+        // shell-owned test directory so the CI runner can retrieve them later.
+        try (java.io.InputStream result = new android.os.ParcelFileDescriptor.AutoCloseInputStream(
+                instrumentation.getUiAutomation().executeShellCommand(
+                    "screencap -p /data/local/tmp/pikaraoke-tv-" + name + ".png"))) {
+            byte[] buffer = new byte[1024];
+            while (result.read(buffer) != -1) { }
+        }
+    }
     @Test public void standaloneRoomDownloadsAndPlays() throws Exception {
         android.app.Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
@@ -28,16 +38,9 @@ public class RoomIntegrationTest {
         assertTrue(Python.getInstance().getModule("android_runtime.bootstrap").callAttr("status").toString(),
             Python.getInstance().getModule("android_runtime.bootstrap").callAttr("ready").toBoolean());
         Thread.sleep(8000); // Allow the actual GeckoView player to connect.
-        java.io.File screenshots = new java.io.File(context.getExternalFilesDir(null), "screenshots");
-        screenshots.mkdirs();
-        android.graphics.Bitmap screen = instrumentation.getUiAutomation().takeScreenshot();
-        if (screen != null) {
-            try (java.io.FileOutputStream out = new java.io.FileOutputStream(new java.io.File(screenshots, "tv-room.png"))) {
-                screen.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
-            }
-            screen.recycle();
-        }
+        screenshot(instrumentation, "room");
         String report = Python.getInstance().getModule("device_checks").callAttr("run", context).toString();
+        screenshot(instrumentation, "playing");
         android.util.Log.i("PiKaraokeIntegration", report);
         assertTrue(report, report.contains("\"download_to_file\": true"));
         android.net.Uri roots = android.provider.DocumentsContract.buildRootsUri("org.pikaraoke.tv.songs");

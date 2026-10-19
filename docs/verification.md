@@ -1,5 +1,19 @@
 # Release verification
 
+## Phone microphone prototype
+
+- [Android TV API 36 test run](https://github.com/nabekhan/pikaraoke-android/actions/runs/39335177016): all three device tests passed.
+- Four native WebRTC senders connected at once and sent PCM audio to the TV's AudioTrack mixer.
+- A fifth sender was refused; leaving freed a slot.
+- Per-install CA generation, certificate signatures, and IP address renewal passed.
+- The actual Android HTTPS listener served the mic page and accepted four guest reservations using its trusted CA.
+- HTTP mic mutations and requests from another origin were refused.
+- The existing song download, processing, playback, authentication, and file-access test passed.
+- Browser checks cover worklet framing, connection state, mute, stale-audio drops, and cleanup after interrupted startup.
+- Physical phones, Wi-Fi audio, audible latency, and feedback still need testing.
+
+## Original release
+
 Verified on 2026-10-19 using an ARM64 Android TV API 34 emulator on Apple silicon.
 The app, Python service, media tools and browser all ran inside the APK.
 The same integration test also passed on an x86-64 Android TV API 36 emulator

@@ -36,6 +36,7 @@
 
 - Up to four phones can sing through the TV at once.
 - Open **Mic** in the phone web interface.
+- Uses the name you already entered in PiKaraoke.
 - First use: install that TV's CA certificate, then open the secure mic link.
 - On iPhone, also enable full trust under Settings → General → About → Certificate Trust Settings.
 - Phones need the same local network as the TV. Audio stays on that network.

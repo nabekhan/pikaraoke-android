@@ -6,11 +6,11 @@
   const apiRoot = `${basePath}/api/phone-mics`;
   const $ = (id) => document.getElementById(id);
   const ui = {
-    toggle: $('mic-toggle'), status: $('mic-status'), name: $('mic-name'), gain: $('gain'),
+    toggle: $('mic-toggle'), status: $('mic-status'), gain: $('gain'),
     gainValue: $('gain-value'), reverb: $('reverb'), reverbDescription: $('reverb-description'),
     mute: $('mute'), slots: $('slot-list'), slotCount: $('slot-count'), title: $('track-title'),
     user: $('track-user'), certificate: $('certificate-panel'), secureLink: $('secure-link'),
-    caLink: $('ca-link'), help: $('help-panel'), helpButton: $('help-button'), level: document.querySelector('.level')
+    caLink: $('ca-link'), level: document.querySelector('.level')
   };
   const state = { id: null, slot: null, pc: null, channel: null, stream: null, context: null, heartbeat: null, wakeLock: null, sequence: 0, active: false, stopping: false, muted: false, reverb: 0, lastInfo: null, startPromise: null };
   const reverbNames = ['Off', 'Room', 'Hall', 'Stage'];
@@ -72,6 +72,15 @@
     if (!state.active && active.length >= max) setStatus('All four phone mics are in use', true);
   }
   function escapeHtml(value) { const node = document.createElement('span'); node.textContent = value; return node.innerHTML; }
+  function singerName() {
+    // PiKaraoke's user cookie is shared by the HTTP and HTTPS ports.
+    const cookie = document.cookie.split(';').map(value => value.trim()).find(value => value.startsWith('user='));
+    if (!cookie) return 'Singer';
+    let name = cookie.slice(5);
+    if (name.startsWith('"')) name = name.slice(1, -1);
+    try { name = decodeURIComponent(name); } catch (_) {}
+    return name.trim().slice(0, 48) || 'Singer';
+  }
   async function refreshInfo() {
     try { renderInfo(await api()); }
     catch (error) { if (!state.active) setStatus('Could not reach PiKaraoke. Check this phone is on the same network.', true); }
@@ -152,8 +161,7 @@
       if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection || !window.AudioWorkletNode) {
         setStatus('Update Safari or Chrome to use this microphone.', true); return;
       }
-      const name = ui.name.value.trim() || 'Singer';
-      try { localStorage.setItem('pikaroke-phone-mic-name', name); } catch (_) {}
+      const name = singerName();
       setStatus('Requesting microphone permission…'); ui.toggle.disabled = true;
       try {
         const info = await api(); check(); renderInfo(info);
@@ -221,14 +229,12 @@
   ui.mute.addEventListener('click', () => setMute(!state.muted));
   ui.gain.addEventListener('input', () => { ui.gainValue.textContent = `${ui.gain.value}%`; sendControls(); });
   ui.reverb.addEventListener('click', () => { state.reverb = (state.reverb + 1) % 4; refreshReverb(); sendControls(); });
-  ui.helpButton.addEventListener('click', () => { const next = ui.help.hidden; ui.help.hidden = !next; ui.helpButton.setAttribute('aria-expanded', String(next)); });
   $('close-button').addEventListener('click', async () => { await stopMic('Microphone stopped'); history.length > 1 ? history.back() : (window.location.href = `${basePath}/` || '/'); });
   window.addEventListener('pagehide', () => {
     if (state.id && navigator.sendBeacon) navigator.sendBeacon(`${apiRoot}/${encodeURIComponent(state.id)}/leave`, new Blob(['{}'], { type: 'application/json' }));
     stopMic('Microphone stopped');
   });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state.active) acquireWakeLock(); });
-  try { ui.name.value = localStorage.getItem('pikaroke-phone-mic-name') || ''; } catch (_) {}
   ui.mute.disabled = true; refreshReverb(); setLinks(); refreshInfo(); setInterval(refreshInfo, 5000);
   if (!window.isSecureContext) showCertificateOnboarding();
 })();

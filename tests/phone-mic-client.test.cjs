@@ -67,7 +67,10 @@ function client(options={}) {
   assert.equal(frames.length,1);assert.equal(frames[0].samples.length,256);
   assert.equal(frames[0].rms,.5);assert.ok(silentOutput.every(value=>value===0),'phone must not play its own microphone');
   let c=client();await settle();
+  c.w.document.cookie=`user=${encodeURIComponent('Zoë & Sam')}; path=/`;
   c.w.document.getElementById('mic-toggle').click();await settle();
+  const reservation=c.calls.find(([url,config])=>url==='/api/phone-mics'&&config.method==='POST');
+  assert.equal(JSON.parse(reservation[1].body).name,'Zoë & Sam','reuse the existing PiKaraoke name');
   assert.equal(c.w.document.getElementById('mic-toggle').classList.contains('live'),false,'must not show live before data channel opens');
   c.channel.readyState='open';c.channel.onopen();await settle();
   assert.equal(c.w.document.getElementById('mic-toggle').classList.contains('live'),true);
