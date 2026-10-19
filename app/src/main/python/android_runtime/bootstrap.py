@@ -118,6 +118,9 @@ def start(context, songs_path):
         network.get_ip = lambda platform: str(AndroidPlatform.localIp(context))
         get_platform.get_installed_js_runtime = lambda: 'quickjs'
         youtube_dl.get_installed_js_runtime = get_platform.get_installed_js_runtime
+        # The subprocess adapter provides the exact executable path. A second
+        # bare "quickjs" option would overwrite that path in yt-dlp's parser.
+        youtube_dl._js_runtime_args = lambda: []
         ffmpeg.supports_hardware_h264_encoding = lambda: False
 
         def update_ytdlp():
@@ -163,9 +166,13 @@ def start(context, songs_path):
         _status = 'Ready'
         app.main()
         normal_exit = True
-    except SystemExit:
-        _status = 'PiKaraoke stopped. Open the app to start again.'
-        normal_exit = True
+    except SystemExit as exc:
+        if exc.code not in (None, 0):
+            logging.error('PiKaraoke startup exited with status %s', exc.code)
+            _error = 'PiKaraoke could not start. Close and reopen the app.'
+        else:
+            _status = 'PiKaraoke stopped. Open the app to start again.'
+            normal_exit = True
     except BaseException as exc:
         logging.exception('PiKaraoke startup failed')
         _error = f'PiKaraoke could not start: {type(exc).__name__}: {exc}'

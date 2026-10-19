@@ -145,7 +145,7 @@ public final class MainActivity extends Activity {
                     case 6:
                         String password = getSharedPreferences("host", 0).getString("initialPassword", "");
                         new AlertDialog.Builder(this).setTitle("Host password")
-                            .setMessage("Initial password: " + password + "\n\nIf you changed it in room settings, use your new password. Host access is separate from your device password.")
+                            .setMessage("Password set on this TV: " + password + "\n\nIf you changed it from a phone, use your new password. Host access is separate from your device password.")
                             .setPositiveButton("Close", null)
                             .setNeutralButton("Set host password", (d,w) -> changePassword()).show(); break;
                     case 7:
@@ -171,7 +171,7 @@ public final class MainActivity extends Activity {
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String password=input.getText().toString();
             if(password.length()<8) { input.setError("Use at least 8 characters"); return; }
-            if(KaraokeService.instance==null) { input.setError("Open the room before changing its password"); return; }
+            if(!opened || KaraokeService.instance==null) { input.setError("Open the room before changing its password"); return; }
             KaraokeService.call("set_host_password", password);
             dialog.dismiss();
         }));

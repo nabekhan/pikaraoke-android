@@ -84,9 +84,10 @@ def run(context):
         assert pitched.stat().st_size > 1000
         stats = host.get(root + '/api/info/stats')
         assert stats.status_code == 200 and 'memory' in stats.json()
+        from pikaraoke import VERSION
         return json.dumps({'download_to_file': True, 'tv_browser_playback_position': state['now_playing_position'],
                            'phone_api_and_auth': True, 'pitch_and_normalization': True,
-                           'ytdlp': ytdlp_version, 'upstream': str(k.ffmpeg_version)})
+                           'ytdlp': ytdlp_version, 'ffmpeg': str(k.ffmpeg_version), 'pikaraoke': VERSION})
     finally:
         server.shutdown()
         k.download_manager._additional_ytdl_args = saved_download_args
