@@ -123,6 +123,7 @@ public final class KaraokeService extends Service {
     @Override public void onDestroy() {
         getSystemService(ConnectivityManager.class).unregisterNetworkCallback(networkCallback);
         AndroidAudio.stopAll();
+        PhoneMicHost.stopAll();
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
         instance = null;
         new Thread(() -> {

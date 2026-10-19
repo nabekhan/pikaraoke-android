@@ -20,6 +20,8 @@ class WSGIServer:
         global server
         server = self.httpd
         spawn(self.httpd.serve_forever)
+        from android_runtime.phone_mics import start_https
+        start_https(self.httpd.app)
 
 
 def stop_server():

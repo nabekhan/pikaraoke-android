@@ -50,6 +50,7 @@ tasks.register('prepareUpstream', Exec) {
     inputs.dir rootProject.file('upstream/pikaraoke')
     inputs.file rootProject.file('scripts/prepare_upstream.py')
     inputs.file rootProject.file('app/src/main/assets/android-tv.js')
+    inputs.files fileTree('src/main/assets') { include 'phone-mic*' }
     outputs.dir layout.buildDirectory.dir('generated/python')
 }
 tasks.matching { it.name == 'generateReleasePythonRequirements' || it.name == 'generateDebugPythonRequirements' || it.name.contains('PythonSources') }.configureEach { dependsOn 'prepareUpstream' }
@@ -67,6 +68,8 @@ tasks.register('prepareNotices', Copy) {
 tasks.named('preBuild') { dependsOn 'prepareUpstream', 'prepareDownloader', 'prepareNotices' }
 
 dependencies {
+    implementation 'io.github.webrtc-sdk:android:150.7871.01'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.86'
     implementation 'org.mozilla.geckoview:geckoview:158.0.20261007201254'
     implementation 'io.github.junkfood02.youtubedl-android:library:0.18.1'
     implementation 'io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1'

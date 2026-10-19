@@ -25,6 +25,15 @@ public class RoomIntegrationTest {
         }
         assertTrue("Embedded server did not start", Python.isStarted());
         Thread.sleep(8000); // Allow the actual GeckoView player to connect.
+        java.io.File screenshots = new java.io.File(context.getExternalFilesDir(null), "screenshots");
+        screenshots.mkdirs();
+        android.graphics.Bitmap screen = instrumentation.getUiAutomation().takeScreenshot();
+        if (screen != null) {
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(new java.io.File(screenshots, "tv-room.png"))) {
+                screen.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
+            }
+            screen.recycle();
+        }
         String report = Python.getInstance().getModule("device_checks").callAttr("run", context).toString();
         android.util.Log.i("PiKaraokeIntegration", report);
         assertTrue(report, report.contains("\"download_to_file\": true"));
