@@ -14,7 +14,7 @@ universal APK if unsure. `x86_64` is also built for compatible devices/emulators
 
 1. Open **PiKaraoke TV** from the TV launcher.
 2. Connect phones to the same local network and scan the on-screen QR code,
-   or open `http://<TV's IP address>:5555` in a phone browser.
+   or open `http://<TV's IP address>:8080` in a phone browser.
 3. Search/download songs or browse the local library and queue them.
 4. Press **Back**, **Menu**, or **OK** on the player to open room options.
    Media Play/Pause and Next control playback. The browser controller supports

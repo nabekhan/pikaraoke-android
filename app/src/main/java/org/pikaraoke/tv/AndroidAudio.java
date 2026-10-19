@@ -53,6 +53,7 @@ public final class AndroidAudio {
         private final AcousticEchoCanceler echo;
         private volatile boolean running = true;
         volatile float gain;
+        @android.annotation.SuppressLint("MissingPermission") // activate checks permission and catches revocation via RuntimeException.
         Loopback(AudioDeviceInfo device, float volume, int latency, boolean cancelEcho) {
             super("PiKaraoke microphone");
             gain = Math.max(0, Math.min(1, volume));

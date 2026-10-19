@@ -8,6 +8,9 @@ import sys
 import tempfile
 import threading
 import signal
+import shutil
+import stat
+import zipfile
 
 _backend = None
 _context = None
@@ -71,6 +74,25 @@ def install_process_adapter(context):
     subprocess.Popen = AndroidPopen
 
 
+def repair_native_cache(context):
+    """Recover an extraction interrupted by device power loss, before init."""
+    native = Path(str(context.getApplicationInfo().nativeLibraryDir))
+    base = Path(str(context.getNoBackupFilesDir())) / 'youtubedl-android/packages'
+    for name in ('python', 'ffmpeg'):
+        directory = base / name
+        if not directory.exists():
+            continue
+        with zipfile.ZipFile(native / f'lib{name}.zip.so') as archive:
+            for entry in archive.infolist():
+                if entry.is_dir() or stat.S_ISLNK(entry.external_attr >> 16):
+                    continue
+                file = directory / entry.filename
+                if not file.is_file() or file.stat().st_size != entry.file_size:
+                    logging.warning('Repairing incomplete native %s runtime', name)
+                    shutil.rmtree(directory)
+                    break
+
+
 def start(context, songs_path):
     global _backend, _context, _status, _error
     _context = context
@@ -78,6 +100,7 @@ def start(context, songs_path):
     try:
         from com.yausername.youtubedl_android import YoutubeDL
         from com.yausername.ffmpeg import FFmpeg
+        repair_native_cache(context)
         YoutubeDL.getInstance().init(context)
         FFmpeg.getInstance().init(context)
         install_process_adapter(context)
@@ -121,7 +144,7 @@ def start(context, songs_path):
         KeepAwake.start = lambda self: None
         KeepAwake.stop = lambda self: None
 
-        sys.argv = ['pikaraoke', '--headless', '--skip-ytdl-upgrade',
+        sys.argv = ['pikaraoke', '--port', '8080', '--headless', '--skip-ytdl-upgrade',
                     '--config-file-path', str(data / 'config.ini'),
                     '--download-path', str(songs_path), '--enable-mic-passthrough']
         # Initialize a random per-install host password before opening the LAN.

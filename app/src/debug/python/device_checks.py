@@ -14,7 +14,7 @@ from android_runtime import bootstrap
 def run(context):
     assert bootstrap.ready(), bootstrap.status()
     k = bootstrap._backend.app.config['KARAOKE_INSTANCE']
-    root = 'http://127.0.0.1:5555'
+    root = 'http://127.0.0.1:8080'
     guest = requests.Session()
     host = requests.Session()
     assert guest.get(root + '/api/auth').json()['password_required']

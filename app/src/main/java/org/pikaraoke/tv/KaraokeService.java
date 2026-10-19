@@ -20,6 +20,7 @@ public final class KaraokeService extends Service {
 
     @Override public void onCreate() {
         super.onCreate();
+        Log.i("PiKaraoke", "Starting Android room service");
         instance = this;
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(new NotificationChannel("karaoke", "Karaoke room", NotificationManager.IMPORTANCE_LOW));
@@ -39,13 +40,28 @@ public final class KaraokeService extends Service {
             @Override public void onLinkPropertiesChanged(Network n, LinkProperties p) { call("network_changed"); }
             @Override public void onLost(Network n) { call("network_changed"); }
         };
-        getSystemService(ConnectivityManager.class).registerNetworkCallback(new NetworkRequest.Builder()
-            .clearCapabilities().addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+        NetworkRequest.Builder request = new NetworkRequest.Builder();
+        if (Build.VERSION.SDK_INT >= 30) request.clearCapabilities();
+        else {
+            request.removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED);
+            request.removeCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED);
+            request.removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN);
+        }
+        getSystemService(ConnectivityManager.class).registerNetworkCallback(request
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET).build(), networkCallback);
         new Thread(() -> {
             try {
-                if (!Python.isStarted()) Python.start(new AndroidPlatform(getApplicationContext()));
+                Log.i("PiKaraoke", "Preparing embedded Python runtime");
+                if (!Python.isStarted()) {
+                    repairPythonCache();
+                    AndroidPlatform platform = new AndroidPlatform(getApplicationContext());
+                    platform.redirectStdioToLogcat();
+                    Python.start(platform);
+                }
+                Log.i("PiKaraoke", "Loading Android server adapters");
                 backend = Python.getInstance().getModule("android_runtime.bootstrap");
+                Log.i("PiKaraoke", "Starting upstream PiKaraoke");
                 backend.callAttr("start", getApplicationContext(), org.pikaraoke.tv.AndroidPlatform.songs(this).getAbsolutePath());
                 state = backend.callAttr("status").toString();
             } catch (Throwable e) {
@@ -62,6 +78,34 @@ public final class KaraokeService extends Service {
                 catch (Throwable e) { Log.e("PiKaraoke", "Action failed: " + method, e); }
             }
         });
+    }
+    private void repairPythonCache() throws Exception {
+        java.io.File root = new java.io.File(getFilesDir(), "chaquopy");
+        String manifest;
+        try (java.io.InputStream in = getAssets().open("chaquopy/build.json")) {
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[4096]; int count;
+            while ((count=in.read(buffer))!=-1) out.write(buffer,0,count);
+            manifest=out.toString("UTF-8");
+        }
+        org.json.JSONObject assets = new org.json.JSONObject(manifest).getJSONObject("assets");
+        java.util.Iterator<String> names=assets.keys();
+        while(names.hasNext()) {
+            String name=names.next();
+            if (!(name.equals("stdlib-common.imy") || name.equals("bootstrap.imy") || name.startsWith("bootstrap-native/"))) continue;
+            java.io.File cached=new java.io.File(root,name);
+            if(!cached.exists()) continue;
+            boolean valid;
+            try(java.io.InputStream in=getAssets().open("chaquopy/"+name)) { valid=cached.length()==in.available(); }
+            if(valid && name.endsWith(".imy")) {
+                try(java.util.zip.ZipFile archive=new java.util.zip.ZipFile(cached)) { valid=archive.size()>0; }
+                catch(java.io.IOException e) { valid=false; }
+            }
+            if(!valid) {
+                Log.w("PiKaraoke", "Repairing incomplete Python runtime asset: "+name);
+                if(!cached.delete()) throw new java.io.IOException("Cannot repair Python cache");
+            }
+        }
     }
     public String status() {
         return backend != null ? backend.callAttr("status").toString() : state;

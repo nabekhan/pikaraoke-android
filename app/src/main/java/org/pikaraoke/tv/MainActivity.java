@@ -26,7 +26,7 @@ public final class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private boolean controller = false, opened = false, destroyed = false;
-    private static final String ORIGIN = "http://127.0.0.1:5555";
+    private static final String ORIGIN = "http://127.0.0.1:8080";
 
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
@@ -82,7 +82,7 @@ public final class MainActivity extends Activity {
         s.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession session, LoadRequest request) {
                 Uri uri = Uri.parse(request.uri);
-                boolean local = "http".equals(uri.getScheme()) && "127.0.0.1".equals(uri.getHost()) && uri.getPort() == 5555;
+                boolean local = "http".equals(uri.getScheme()) && "127.0.0.1".equals(uri.getHost()) && uri.getPort() == 8080;
                 if (!local && request.uri.startsWith("http")) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (ActivityNotFoundException ignored) { }
                 }
@@ -129,7 +129,7 @@ public final class MainActivity extends Activity {
     }
     private void menu() {
         String[] labels = {"Show player", "Browse and queue songs", "Pause or resume", "Skip song", "Import song files", "Open song files", "Host password", "Allow microphones", "Stop room and exit"};
-        new AlertDialog.Builder(this).setTitle("PiKaraoke TV · " + AndroidPlatform.localIp(this) + ":5555")
+        new AlertDialog.Builder(this).setTitle("PiKaraoke TV · " + AndroidPlatform.localIp(this) + ":8080")
             .setItems(labels, (dialog, index) -> {
                 switch(index) {
                     case 0: showPlayer(); break;

@@ -24,6 +24,16 @@ def main():
     if DEST.exists():
         shutil.rmtree(DEST)
     shutil.copytree(ROOT / 'upstream/pikaraoke', DEST, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    # Upstream's package import eagerly binds platform functions in Karaoke.
+    # Defer that import until the Android adapters have been installed.
+    replace(DEST / '__init__.py', 'from pikaraoke.karaoke import Karaoke\n', '')
+    replace(DEST / '__init__.py', '    Karaoke.__name__,', '    "Karaoke",')
+    with (DEST / '__init__.py').open('a') as out:
+        out.write('\n\ndef __getattr__(name):\n'
+                  '    if name == "Karaoke":\n'
+                  '        from pikaraoke.karaoke import Karaoke\n'
+                  '        return Karaoke\n'
+                  '    raise AttributeError(name)\n')
     replace(DEST / 'app.py', 'from gevent import monkey, spawn\n\nmonkey.patch_all()',
             'from android_runtime.compat import spawn')
     replace(DEST / 'app.py', 'from gevent.pywsgi import WSGIServer',
