@@ -48,8 +48,9 @@ because the hosted runner ran out of disk space. The workflow now frees unused
 hosted tools and bounds the AVD partition size. The rerun passed the actual
 Android integration test. The earlier boot failure occurred before app installation.
 
-Raw reports and the actual TV playback screenshot are retained locally under
-`artifacts/verification/`. `release-result.json` records the signed-APK checks.
+Raw reports and TV playback screenshots are preserved in the release attachment
+`pikaraoke-tv-0.1.0-verification.tar.gz`. `release-result.json` records the
+signed-APK checks.
 
 The upstream source is pinned to
 `48c7122e16784417e43ae0c4f1d744ed2a0b6492` (PiKaraoke 1.23.0).
