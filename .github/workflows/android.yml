@@ -30,6 +30,8 @@ jobs:
           python -m unittest discover -s tests -p test_phone_mics.py
           javac -d "$RUNNER_TEMP/mic-check" app/src/main/java/org/pikaraoke/tv/PhoneMicBuffer.java tests/PhoneMicBufferCheck.java
           java -cp "$RUNNER_TEMP/mic-check" PhoneMicBufferCheck
+          npm install --prefix "$RUNNER_TEMP/mic-browser" --ignore-scripts --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH="$RUNNER_TEMP/mic-browser/node_modules" node tests/phone-mic-client.test.cjs
           sdkmanager 'platforms;android-37.2' 'build-tools;36.0.0'
           echo "PIKARAOKE_BUILD_PYTHON=$(command -v python3)" >> "$GITHUB_ENV"
       - run: ./gradlew assembleDebug assembleDebugAndroidTest --console=plain

@@ -84,6 +84,7 @@
     $('ca-fingerprint').textContent = config.ca_fingerprint || '';
   }
   function showCertificateOnboarding() {
+    document.body.classList.add('needs-certificate');
     ui.certificate.hidden = false;
     ui.toggle.disabled = true;
     setStatus('Open the secure microphone link to continue', true);
@@ -147,7 +148,10 @@
     state.startPromise = (async () => {
       const version = ++startVersion;
       const check = () => { if (version !== startVersion) throw new Error('Microphone stopped'); };
-      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection || !window.AudioWorkletNode) { showCertificateOnboarding(); return; }
+      if (!window.isSecureContext) { showCertificateOnboarding(); return; }
+      if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection || !window.AudioWorkletNode) {
+        setStatus('Update Safari or Chrome to use this microphone.', true); return;
+      }
       const name = ui.name.value.trim() || 'Singer';
       try { localStorage.setItem('pikaroke-phone-mic-name', name); } catch (_) {}
       setStatus('Requesting microphone permission…'); ui.toggle.disabled = true;

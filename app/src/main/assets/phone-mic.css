@@ -23,3 +23,5 @@ code { overflow-wrap:anywhere; font-size:11px; }
 @media (max-height:780px) { .identity { margin-top:14px; }.mic-stage { min-height:278px; }.mic-toggle { height:196px; width:128px; }.slots { margin-top:16px; } }
 .slot.muted .slot-name::after { content:none; }
 .slot-state { display:block; min-height:12px; color:#a7a3aa; font-size:10px; }
+.needs-certificate .mic-stage,.needs-certificate .effects,.needs-certificate .identity { display:none; }
+.needs-certificate .certificate-panel { margin-top:28px; }
