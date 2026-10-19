@@ -51,6 +51,20 @@ class UpdatePlanTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 automation.checksum_for_zipapp(text)
 
+    def test_untagged_draft_is_found_for_retry(self):
+        draft = {"tag_name": "v1.23.0-android.2", "draft": True}
+        with patch.object(automation, "api", side_effect=[None, [draft]]) as request:
+            self.assertEqual(automation.find_release(draft["tag_name"]), draft)
+        self.assertEqual(request.call_count, 2)
+
+    def test_successful_run_is_not_published_twice(self):
+        self.version["automation_run_id"] = "123"
+        with patch.object(automation, "read_json", return_value=self.version), \
+             patch.object(automation, "git", side_effect=["a" * 40, "160000 commit " + "b" * 40 + "\tupstream"]), \
+             patch.object(automation, "api", return_value={"draft": False}), \
+             patch.dict(automation.os.environ, {"GITHUB_RUN_ID": "123"}):
+            self.assertFalse(automation.make_plan(force=True)["publish"])
+
     def test_resume_keeps_existing_version(self):
         self.plan["resume"] = True
         self.plan["files"] = {}

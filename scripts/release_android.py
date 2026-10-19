@@ -14,7 +14,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 
-from automation import ALLOWED_FILES, REPOSITORY, api, git, json_text, read_json, validate_plan
+from automation import ALLOWED_FILES, REPOSITORY, api, find_release, git, json_text, read_json, validate_plan
 
 CERTIFICATE = "feded228e772fc3cf25cabfbaf0daf587d996fd8672da4bdc61142c592368104"
 ABIS = ("arm64-v8a", "armeabi-v7a", "x86_64", "universal")
@@ -160,7 +160,7 @@ def publish(plan_path, signed, archive):
         "SHA256SUMS, signing verification, the exact update plan, and complete source are attached.\n\n"
         f"Workflow: https://github.com/{REPOSITORY}/actions/runs/{os.environ['GITHUB_RUN_ID']}\n"
     )
-    release = api(REPOSITORY + "/releases/tags/" + tag, missing_ok=True)
+    release = find_release(tag)
     if release:
         assert release["draft"] and MARKER in release["body"], "Refusing to overwrite another release"
         release = api(REPOSITORY + "/releases/" + str(release["id"]), "PATCH", {

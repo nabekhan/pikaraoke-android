@@ -45,6 +45,24 @@ def api(path, method="GET", data=None, missing_ok=False):
         raise RuntimeError(f"GitHub API {method} failed with HTTP {error.code}") from None
 
 
+
+def find_release(tag):
+    # Drafts may not yet have a Git tag. The list endpoint also exposes these
+    # to a writer, so retries must check it before creating another draft.
+    release = api(REPOSITORY + "/releases/tags/" + tag, missing_ok=True)
+    if release:
+        return release
+    for page in range(1, 1001):
+        values = api(REPOSITORY + f"/releases?per_page=100&page={page}")
+        matches = [item for item in values if item["tag_name"] == tag]
+        assert len(matches) <= 1, "Ambiguous release tag"
+        if matches:
+            return matches[0]
+        if len(values) < 100:
+            return None
+    raise RuntimeError("Release history is too large; review required")
+
+
 def git(*args):
     return subprocess.check_output(["git", *args], text=True).strip()
 
@@ -170,7 +188,7 @@ def make_plan(force=False):
         "publish": False, "resume": False, "files": {}, "version": current,
     }
     if current.get("automated"):
-        existing = api(REPOSITORY + "/releases/tags/" + current["release_tag"], missing_ok=True)
+        existing = find_release(current["release_tag"])
         if not existing or existing["draft"]:
             plan.update(publish=True, resume=True, release_tag=current["release_tag"])
             validate_plan(plan, current)
