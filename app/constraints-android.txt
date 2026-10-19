@@ -1,4 +1,4 @@
-# Resolved with the first verified Android build; update deliberately.
+# Compatible pins retained; re-resolved only when upstream requires it.
 apispec==6.10.0
 babel==2.17.0
 bidict==0.24.1

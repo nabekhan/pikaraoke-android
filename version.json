@@ -1,4 +1,9 @@
 {
-  "version_code": 1,
-  "version_name": "0.1.0"
+  "automated": true,
+  "automation_run_id": "39312647064",
+  "release_tag": "v1.23.0-android.2",
+  "upstream_sha": "4e6f529dfbc7f5a07b6387adb3a6fd96da11e6d1",
+  "version_code": 2,
+  "version_name": "1.23.0-android.2",
+  "yt_dlp_version": "2026.08.19"
 }
