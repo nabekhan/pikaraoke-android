@@ -37,11 +37,12 @@
 - Up to four phones can sing through the TV at once.
 - Open **Mic** in the phone web interface.
 - Uses the name you already entered in PiKaraoke.
-- First use: install that TV's CA certificate, then open the secure mic link.
+- Starting the mic opens HTTPS, with brief certificate install steps if needed.
 - On iPhone, also enable full trust under Settings → General → About → Certificate Trust Settings.
 - Phones need the same local network as the TV. Audio stays on that network.
-- Tap **Start mic**. Each phone has volume, mute, and reverb controls.
-- Keep the mic page open. **Add song** and **Queue** open in another tab.
+- Slide the mic up to connect, down to disconnect. Taps do not switch it on or off.
+- Tap the volume or reverb icon to adjust it.
+- The top-right button returns to PiKaraoke and disconnects the mic.
 - Disconnect to free a slot. Lost connections expire automatically.
 - Each TV generates its own certificates. Private keys stay in app storage.
 - Real phone compatibility and audible latency on physical TVs still need testing.
@@ -57,19 +58,23 @@
 
 ## Build
 
-- With Nix:
+- Install JDK 17, Python 3.11, and the Android SDK (platform 37.2, build-tools 36.0.0).
+- Set `ANDROID_HOME` to the SDK directory. Android Studio's SDK Manager can install the required SDK packages.
 
 ```sh
 git clone --recurse-submodules https://github.com/nabekhan/pikaraoke-android.git
 cd pikaraoke-android
-nix develop
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install Babel==2.17.0
 export PIKARAOKE_BUILD_PYTHON="$(command -v python3)"
 ./gradlew assembleDebug
 ```
 
-- Without Nix: JDK 17, Python 3.11 with Babel, Android SDK 37.2, build-tools 36.0.0, and `ANDROID_HOME`.
+- On Windows, activate the virtual environment and set environment variables using your shell's equivalent commands.
 - `./gradlew assembleRelease` builds unsigned release APKs unless signing is configured.
 - Local signing uses `PIKARAOKE_KEYSTORE`, `PIKARAOKE_STORE_PASSWORD`, `PIKARAOKE_KEY_ALIAS`, and `PIKARAOKE_KEY_PASSWORD`.
+- Nix users can use the optional `nix develop` environment instead of installing build tools manually.
 
 ## Notes
 
