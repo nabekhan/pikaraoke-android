@@ -145,6 +145,13 @@ def repair_latest(plan_path):
     report = json.loads(read_release_asset(tag, assets["signing-verification.json"]))
     assert report["certificate_sha256"] == CERTIFICATE
     assert report["version"] == plan["version"] and report["upstream_sha"] == plan["upstream_sha"]
+    tagged = api(REPOSITORY + "/commits/" + urllib.parse.quote(tag, safe=""))
+    # Initial signing uses the version commit's parent; interrupted-publication
+    # rebuilds sign from the already-committed version itself.
+    assert len(tagged["parents"]) == 1
+    assert report["base_sha"] in (tagged["sha"], tagged["parents"][0]["sha"])
+    contents = api(REPOSITORY + "/contents/version.json?ref=" + tagged["sha"])
+    assert json.loads(base64.b64decode(contents["content"])) == plan["version"]
     assert len(report["apks"]) == len(names) and {r["name"] for r in report["apks"]} == names
     for record in report["apks"]:
         asset = assets[record["name"]]

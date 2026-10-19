@@ -130,6 +130,7 @@ class PublicationTests(unittest.TestCase):
         self.signed = self.root / "signed"
         self.signed.mkdir()
         self.base = "a" * 40
+        self.tag_parent = self.base
         self.version = {"automated": True, "version_code": 9, "version_name": "1.23.0-android.9",
                         "release_tag": "v1.23.0-android.9", "upstream_sha": "b" * 40}
         self.plan = {"schema": 1, "base_sha": self.base, "upstream_sha": "b" * 40,
@@ -160,6 +161,10 @@ class PublicationTests(unittest.TestCase):
             return None
         if path.endswith("/releases/latest"):
             return {"id": self.latest_id, "assets": getattr(self, "public_assets", [])}
+        if "/commits/v" in path:
+            return {"sha": "c" * 40, "parents": [{"sha": self.tag_parent}]}
+        if "/contents/version.json?ref=" in path:
+            return {"content": release_android.base64.b64encode(json.dumps(self.version).encode()).decode()}
         if method == "PATCH" and data.get("draft") is False:
             # Latest must never point to a release with missing download assets.
             self.assertIn("app.apk", self.uploads)
@@ -241,6 +246,10 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "not GitHub's latest"):
             self.publish()
         self.latest_id = 7
+        # Publication already committed the version; a fresh plan starts there.
+        # The signing report still records the pre-update parent.
+        self.base = "c" * 40
+        self.plan["base_sha"] = self.base
         self.requests.clear()
         self.repair()
         mutations = [(method, data) for path, method, data in self.requests if method != "GET"]
@@ -254,6 +263,22 @@ class PublicationTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 self.repair(change)
             self.assertFalse(any(method != "GET" for path, method, data in self.requests))
+
+    def test_repair_rejects_signing_report_from_another_source_base(self):
+        self.publish()
+        report = json.loads(self.uploads["signing-verification.json"])
+        report["base_sha"] = "e" * 40
+        data = json.dumps(report).encode()
+        self.uploads["signing-verification.json"] = data
+        checksums = self.uploads["SHA256SUMS"].decode().splitlines()
+        self.uploads["SHA256SUMS"] = ("\n".join(
+            release_android.hashlib.sha256(data).hexdigest() + "  signing-verification.json"
+            if line.endswith("  signing-verification.json") else line for line in checksums
+        ) + "\n").encode()
+        self.requests.clear()
+        with self.assertRaises(AssertionError):
+            self.repair()
+        self.assertFalse(any(method != "GET" for path, method, data in self.requests))
 
     def test_metadata_download_checks_size_and_digest(self):
         data = b"release metadata"
