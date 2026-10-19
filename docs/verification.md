@@ -2,6 +2,10 @@
 
 Verified on 2026-10-19 using an ARM64 Android TV API 34 emulator on Apple silicon.
 The app, Python service, media tools and browser all ran inside the APK.
+The same integration test also passed on an x86-64 Android TV API 36 emulator
+in [GitHub Actions](https://github.com/nabekhan/pikaraoke-android/actions/runs/39246935553):
+one test passed, none failed or skipped, in 89.10 seconds. Both build and
+device-test jobs succeeded for release commit `9dfb741`.
 
 | Check | Evidence |
 | --- | --- |
@@ -14,7 +18,7 @@ The app, Python service, media tools and browser all ran inside the APK.
 | External remote client | A separate host-side HTTP/Socket.IO client queued a song, changed its key to +2 during playback, and set volume to 0.4 |
 | File access | Android document-provider root/query/read succeeded; traversal outside the song directory was refused |
 | Online search | A YouTube search through the Android server returned real results |
-| Live YouTube download | The signed release downloaded `jNQXAC9IVRw` through the original queue and saved an MP4 in the Android song directory with no download errors |
+| Live YouTube download | The signed release downloaded `jNQXAC9IVRw` through the original queue, saved an MP4, and played that saved file in the final signed APK (reported position 2.715833 seconds) |
 | Signed APK lifecycle | Password login, actual playback, remote Quit followed by reopening, and library persistence succeeded in the signed release |
 | APK update | Installing the final signed APK over the candidate preserved authentication, the library, and the exact SHA-256 of a saved song |
 | Runtime | PiKaraoke 1.23.0; FFmpeg 7.1.1; yt-dlp 2026.08.19; bundled QuickJS executed JavaScript |
@@ -33,16 +37,16 @@ the packaged Python/native caches. The Android server uses port **8080**, avoidi
 the emulator/Android-debugging conflict on upstream's default port 5555.
 
 Physical TV hardware, USB microphone routing, audible latency/echo cancellation,
-32-bit ARM execution, x86-64 execution, and real phone/Wi-Fi connectivity have
-not been physically verified. The external-client check used an ADB TCP tunnel.
+and real phone/Wi-Fi connectivity have not been physically verified. 32-bit ARM
+execution has not been tested. The external-client check used an ADB TCP tunnel.
 Native libraries for all three advertised ABIs are present in their APKs.
 All four release APKs passed APK v2 signature verification with certificate
 SHA-256 `feded228e772fc3cf25cabfbaf0daf587d996fd8672da4bdc61142c592368104`.
 
 GitHub's optional x86-64 device-test job initially could not boot its emulator
 because the hosted runner ran out of disk space. The workflow now frees unused
-hosted tools and bounds the AVD partition size. This failure occurred before app
-installation; it is not counted as Android runtime verification.
+hosted tools and bounds the AVD partition size. The rerun passed the actual
+Android integration test. The earlier boot failure occurred before app installation.
 
 Raw reports and the actual TV playback screenshot are retained locally under
 `artifacts/verification/`. `release-result.json` records the signed-APK checks.
