@@ -23,7 +23,11 @@
     .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
   document.addEventListener('keydown', event => {
     const current = document.activeElement;
-    if (['INPUT','TEXTAREA','SELECT'].includes(current?.tagName)) return;
+    if (['TEXTAREA','SELECT'].includes(current?.tagName)) return;
+    if (current?.tagName === 'INPUT' && !['ArrowUp','ArrowDown'].includes(event.key)) return;
+    if (['Enter','Select'].includes(event.key) && ['A','BUTTON'].includes(current?.tagName)) {
+      event.preventDefault(); current.click(); return;
+    }
     const direction = {ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[event.key];
     if (!direction) return;
     const all = targets();
