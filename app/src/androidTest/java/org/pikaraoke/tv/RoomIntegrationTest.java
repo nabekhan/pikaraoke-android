@@ -21,9 +21,12 @@ public class RoomIntegrationTest {
         long deadline = System.currentTimeMillis() + 90000;
         while(System.currentTimeMillis() < deadline) {
             if (Python.isStarted() && Python.getInstance().getModule("android_runtime.bootstrap").callAttr("ready").toBoolean()) break;
+            if (Python.isStarted() && Python.getInstance().getModule("android_runtime.bootstrap").callAttr("status").toString().contains("could not start")) break;
             Thread.sleep(500);
         }
         assertTrue("Embedded server did not start", Python.isStarted());
+        assertTrue(Python.getInstance().getModule("android_runtime.bootstrap").callAttr("status").toString(),
+            Python.getInstance().getModule("android_runtime.bootstrap").callAttr("ready").toBoolean());
         Thread.sleep(8000); // Allow the actual GeckoView player to connect.
         java.io.File screenshots = new java.io.File(context.getExternalFilesDir(null), "screenshots");
         screenshots.mkdirs();
