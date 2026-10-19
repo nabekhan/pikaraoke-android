@@ -52,14 +52,13 @@ def find_release(tag):
     release = api(REPOSITORY + "/releases/tags/" + tag, missing_ok=True)
     if release:
         return release
+    matches = []
     for page in range(1, 1001):
         values = api(REPOSITORY + f"/releases?per_page=100&page={page}")
-        matches = [item for item in values if item["tag_name"] == tag]
+        matches.extend(item for item in values if item["tag_name"] == tag)
         assert len(matches) <= 1, "Ambiguous release tag"
-        if matches:
-            return matches[0]
         if len(values) < 100:
-            return None
+            return matches[0] if matches else None
     raise RuntimeError("Release history is too large; review required")
 
 

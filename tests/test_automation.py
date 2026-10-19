@@ -57,6 +57,13 @@ class UpdatePlanTests(unittest.TestCase):
             self.assertEqual(automation.find_release(draft["tag_name"]), draft)
         self.assertEqual(request.call_count, 2)
 
+    def test_duplicate_drafts_across_pages_are_rejected(self):
+        draft = {"tag_name": "v1.23.0-android.2", "draft": True}
+        first_page = [draft] + [{"tag_name": "other"} for _ in range(99)]
+        with patch.object(automation, "api", side_effect=[None, first_page, [draft]]):
+            with self.assertRaises(AssertionError):
+                automation.find_release(draft["tag_name"])
+
     def test_successful_run_is_not_published_twice(self):
         self.version["automation_run_id"] = "123"
         with patch.object(automation, "read_json", return_value=self.version), \
