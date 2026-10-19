@@ -59,7 +59,8 @@ export PIKARAOKE_BUILD_PYTHON="$(command -v python3)"
 
 ## Notes
 
-- Microphone support, latency, and audio routing depend on the TV.
+- Optional TV/USB microphone passthrough is untested on physical hardware.
+- Phones currently act as remotes, not microphones.
 - Raspberry Pi OS controls such as reboot and filesystem expansion are unavailable.
 - [Test results and limitations](docs/verification.md).
 - [GPL-3.0 license](LICENSE) · [Third-party components](THIRD_PARTY.md).
