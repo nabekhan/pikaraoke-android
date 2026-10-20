@@ -6,6 +6,7 @@ android {
     namespace 'org.pikaraoke.tv'
     compileSdk { version = release(37) { minorApiLevel = 2 } }
     sourceSets.main.res.srcDir 'build/generated/ytdlp/res'
+    sourceSets.main.res.srcDir 'build/generated/branding/res'
     sourceSets.main.assets.srcDir 'build/generated/notices'
     defaultConfig {
         applicationId 'org.pikaraoke.tv'
@@ -71,7 +72,14 @@ tasks.register('prepareNotices', Copy) {
     from rootProject.file('LICENSE'), rootProject.file('THIRD_PARTY.md')
     into layout.buildDirectory.dir('generated/notices/licenses')
 }
-tasks.named('preBuild') { dependsOn 'prepareUpstream', 'prepareDownloader', 'prepareNotices' }
+tasks.register('prepareIcons', Exec) {
+    workingDir rootDir
+    commandLine System.getenv('PIKARAOKE_BUILD_PYTHON') ?: 'python3', 'scripts/prepare_icons.py'
+    inputs.file rootProject.file('scripts/prepare_icons.py')
+    inputs.file rootProject.file('upstream/pikaraoke/static/icons/logo.ico')
+    outputs.dir layout.buildDirectory.dir('generated/branding/res')
+}
+tasks.named('preBuild') { dependsOn 'prepareUpstream', 'prepareDownloader', 'prepareNotices', 'prepareIcons' }
 
 dependencies {
     implementation 'io.github.webrtc-sdk:android-prefixed-stripped:150.7871.01'

@@ -33,3 +33,5 @@ CSS, and SVG icons; no Apple artwork or application code is included.
 The original upstream tree is retained verbatim. The Android build generates
 adapted source only under `app/build/`; all integration changes are in this
 repository. GeckoView includes its own runtime `about:license` notices.
+The launcher artwork is taken unchanged from upstream's `static/icons/logo.ico`
+during the build.
