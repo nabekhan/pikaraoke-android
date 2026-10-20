@@ -1,10 +1,10 @@
 {
   "automated": true,
-  "automation_run_id": "39343734632",
-  "release_tag": "v1.23.0-android.4",
+  "automation_run_id": "39347010767",
+  "release_tag": "v1.23.0-android.5",
   "universal_apk_alias": true,
   "upstream_sha": "7561b604bd90488dfcc228cfbfe0671d0621ef37",
-  "version_code": 4,
-  "version_name": "1.23.0-android.4",
+  "version_code": 5,
+  "version_name": "1.23.0-android.5",
   "yt_dlp_version": "2026.08.19"
 }
