@@ -7,9 +7,35 @@ import subprocess
 import threading
 import time
 import ssl
+import os
 
 import requests
 from android_runtime import bootstrap
+
+
+def seed_storage_quota(context):
+    """Fresh instrumentation data: remove 100% of a previously indexed library."""
+    from org.pikaraoke.tv import AndroidPlatform
+    from pikaraoke.lib import get_platform
+    data = Path(str(context.getFilesDir())) / 'pikaraoke'
+    data.mkdir(parents=True, exist_ok=True)
+    get_platform.get_data_directory = lambda: str(data)
+    from pikaraoke.lib.karaoke_database import KaraokeDatabase
+    from pikaraoke.lib.song_storage import PREFERENCE
+    songs = Path(str(AndroidPlatform.songs(context)))
+    for name, size in [('quota-old.mp3', 256), ('quota-old.cdg', 128),
+                       ('quota-second.mp4', 256), ('quota-third.zip', 256), ('.quota-keep', 128)]:
+        file = songs / name
+        file.write_bytes(b'x' * size)
+        os.utime(file, (1, 1))
+    (data / 'config.ini').write_text('[USERPREFERENCES]\n' + PREFERENCE + '=128\n')
+    database = KaraokeDatabase(str(data / 'pikaraoke.db'))
+    try:
+        database.insert_songs([{'file_path': str(songs / name), 'youtube_id': None, 'format': extension}
+            for name, extension in [('quota-old.mp3', 'cdg'), ('quota-second.mp4', 'mp4'), ('quota-third.zip', 'zip')]])
+        assert len(database.get_all_song_paths()) == 3
+    finally:
+        database.close()
 
 
 def check_phone_microphones(context, guest, root):
@@ -47,10 +73,42 @@ def run(context):
     root = 'http://127.0.0.1:8080'
     guest = requests.Session()
     host = requests.Session()
+    fresh = guest.get(root + '/api/auth').json()
+    assert fresh['authenticated'] and not fresh['password_required']
+    assert guest.post(root + '/api/change_preferences', data={'pref':'volume', 'val':'.85'}).json()[0]
+    # Verify that adding a password restores the normal host/guest boundary.
+    import secrets
+    password = secrets.token_urlsafe(16)
+    bootstrap.set_host_password(password)
     assert guest.get(root + '/api/auth').json()['password_required']
     assert guest.post(root + '/api/skip').status_code == 403
-    password = str(context.getSharedPreferences('host', 0).getString('initialPassword', ''))
     assert host.post(root + '/api/auth', json={'admin_password': password}).status_code == 200
+    from pikaraoke.lib import song_storage
+    assert k.song_storage_cleanup['removed_files'] == 4
+    assert k.song_storage_cleanup['after_bytes'] == 128
+    assert not k.db.get_all_song_paths(), 'Pruned songs remain in the library database'
+    assert not list(k.song_manager.songs), 'Pruned songs remain browseable'
+    setting = {'pref': song_storage.PREFERENCE, 'val': '1'}
+    assert guest.post(root + '/api/change_preferences', data=setting).status_code == 403
+    probe = Path(k.download_path) / '.quota-live-probe'
+    probe.write_bytes(b'keep until next start')
+    try:
+        assert host.post(root + '/api/change_preferences', data=setting).json()[0]
+        assert probe.exists(), 'Saving a limit pruned files in the running room'
+        assert not host.post(root + '/api/change_preferences', data={**setting, 'val': '-1'}).json()[0]
+        assert k.preferences.get_or_default(song_storage.PREFERENCE) == 1
+        assert host.post(root + '/api/change_preferences', data={**setting, 'val': '1500000000'}).json()[0]
+        assert k.preferences.get_or_default(song_storage.PREFERENCE) == 1500000000
+        from pikaraoke.lib.preference_manager import PreferenceManager
+        assert PreferenceManager(k.preferences.config_file_path).get_or_default(song_storage.PREFERENCE) == 1500000000
+        assert 'id="song-storage-form"' in host.get(root + '/settings').text
+        assert 'id="song-storage-form"' not in guest.get(root + '/settings').text
+        home = guest.get(root + '/').text
+        assert 'id="phone-mic" class="navbar-item no-spa" href="/mic"' in home
+        assert 'icon icon-mic-1' in home
+        assert guest.get(root + '/mic').status_code == 200
+    finally:
+        probe.unlink(missing_ok=True)
     for path in ['/', '/splash', '/browse', '/queue', '/search', '/info', '/settings', '/history', '/sessions', '/rankings']:
         response = host.get(root + path)
         assert response.status_code == 200, (path, response.status_code, response.text[:200])
@@ -116,8 +174,16 @@ def run(context):
         assert pitched.stat().st_size > 1000
         stats = host.get(root + '/api/info/stats')
         assert stats.status_code == 200 and 'memory' in stats.json()
+        # Clearing the password restores automatic admin access to a new phone.
+        bootstrap.set_host_password('')
+        fresh = requests.Session()
+        auth = fresh.get(root + '/api/auth').json()
+        assert auth['authenticated'] and not auth['password_required']
+        assert fresh.post(root + '/api/change_preferences', data={'pref':'volume', 'val':'.85'}).json()[0]
         from pikaraoke import VERSION
         return json.dumps({'download_to_file': True, 'tv_browser_playback_position': state['now_playing_position'],
+                           'song_storage_startup_and_settings': True,
+                           'blank_password_auto_admin': True,
                            'phone_api_and_auth': True, 'phone_mic_https_and_four_slots': True, 'pitch_and_normalization': True,
                            'ytdlp': ytdlp_version, 'ffmpeg': str(k.ffmpeg_version), 'pikaraoke': VERSION})
     finally:

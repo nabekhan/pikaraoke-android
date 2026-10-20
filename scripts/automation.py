@@ -16,7 +16,7 @@ import urllib.parse
 import urllib.request
 
 REPOSITORY = "nabekhan/pikaraoke-android"
-UPSTREAM = "vicwomg/pikaraoke"
+UPSTREAM = "nabekhan/pikaraoke"
 ALLOWED_FILES = frozenset({
     "version.json", "ytdlp.json",
     "app/requirements-android.txt", "app/constraints-android.txt",

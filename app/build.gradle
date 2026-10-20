@@ -8,6 +8,8 @@ android {
     sourceSets.main.res.srcDir 'build/generated/ytdlp/res'
     sourceSets.main.res.srcDir 'build/generated/branding/res'
     sourceSets.main.assets.srcDir 'build/generated/notices'
+    sourceSets.main.java.srcDir rootProject.file('upstream/integrations/android/src/main/java')
+    sourceSets.androidTest.java.srcDir rootProject.file('upstream/integrations/android/src/androidTest/java')
     defaultConfig {
         applicationId 'org.pikaraoke.tv'
         minSdk 26
@@ -57,7 +59,6 @@ tasks.register('prepareUpstream', Exec) {
     inputs.dir rootProject.file('upstream/pikaraoke')
     inputs.file rootProject.file('scripts/prepare_upstream.py')
     inputs.file rootProject.file('app/src/main/assets/android-tv.js')
-    inputs.files fileTree('src/main/assets') { include 'phone-mic*' }
     outputs.dir layout.buildDirectory.dir('generated/python')
 }
 tasks.matching { it.name == 'generateReleasePythonRequirements' || it.name == 'generateDebugPythonRequirements' || it.name.contains('PythonSources') }.configureEach { dependsOn 'prepareUpstream' }

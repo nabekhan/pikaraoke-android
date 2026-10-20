@@ -21,7 +21,7 @@ class WSGIServer:
     def start(self):
         global server, servers_ready, server_started
         server = self.httpd
-        from android_runtime.phone_mics import start_https
+        from pikaraoke.integrations.android.phone_mics import start_https
         start_https(self.httpd.app)
         spawn(self.httpd.serve_forever)
         server_started = True
@@ -31,7 +31,7 @@ class WSGIServer:
 def stop_server():
     global server, servers_ready, server_started
     servers_ready = False
-    from android_runtime.phone_mics import stop
+    from pikaraoke.integrations.android.phone_mics import stop
     stop()
     if server:
         if server_started:

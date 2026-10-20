@@ -27,6 +27,18 @@ public class RoomIntegrationTest {
             instrumentation.getUiAutomation().grantRuntimePermission(context.getPackageName(), android.Manifest.permission.POST_NOTIFICATIONS);
         // Suppress only the welcome overlay, which is tested manually with D-pad.
         context.getSharedPreferences("host", 0).edit().putBoolean("welcomeShown", true).commit();
+        if (!Python.isStarted()) {
+            com.chaquo.python.android.AndroidPlatform platform = new com.chaquo.python.android.AndroidPlatform(context);
+            platform.redirectStdioToLogcat();
+            Python.start(platform);
+        }
+        Python.getInstance().getModule("device_checks").callAttr("seed_storage_quota", context);
+        // Seed only this fresh instrumentation install. Cleanup must happen
+        // before the server/library starts, and count unrelated retained files.
+        java.io.File folder = AndroidPlatform.songs(context);
+        java.io.File oldAudio = new java.io.File(folder, "quota-old.mp3");
+        java.io.File oldGraphics = new java.io.File(folder, "quota-old.cdg");
+        java.io.File retained = new java.io.File(folder, ".quota-keep");
         instrumentation.startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         long deadline = System.currentTimeMillis() + 90000;
         while(System.currentTimeMillis() < deadline) {
@@ -37,12 +49,16 @@ public class RoomIntegrationTest {
         assertTrue("Embedded server did not start", Python.isStarted());
         assertTrue(Python.getInstance().getModule("android_runtime.bootstrap").callAttr("status").toString(),
             Python.getInstance().getModule("android_runtime.bootstrap").callAttr("ready").toBoolean());
+        assertFalse("Old audio was not pruned at startup", oldAudio.exists());
+        assertFalse("CDG companion was not pruned with its audio", oldGraphics.exists());
+        assertTrue("Unrelated file was removed", retained.exists());
         Thread.sleep(8000); // Allow the actual GeckoView player to connect.
         screenshot(instrumentation, "room");
         String report = Python.getInstance().getModule("device_checks").callAttr("run", context).toString();
         screenshot(instrumentation, "playing");
         android.util.Log.i("PiKaraokeIntegration", report);
         assertTrue(report, report.contains("\"download_to_file\": true"));
+        assertTrue(report, report.contains("\"song_storage_startup_and_settings\": true"));
         android.net.Uri roots = android.provider.DocumentsContract.buildRootsUri("org.pikaraoke.tv.songs");
         try (android.database.Cursor cursor = context.getContentResolver().query(roots, new String[]{"title"}, null, null, null)) {
             assertNotNull(cursor); assertTrue(cursor.moveToFirst()); assertEquals("PiKaraoke songs", cursor.getString(0));

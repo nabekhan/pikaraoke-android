@@ -99,6 +99,13 @@ def start(context, songs_path):
     _context = context
     normal_exit = False
     try:
+        # Do not change HOME: Chaquopy owns it. Explicitly locate persisted data
+        # before any upstream module captures get_data_directory by value.
+        data = Path(str(context.getFilesDir())) / 'pikaraoke'
+        data.mkdir(parents=True, exist_ok=True)
+        Path(songs_path).mkdir(parents=True, exist_ok=True)
+        from pikaraoke.lib import get_platform
+        get_platform.get_data_directory = lambda: str(data)
         from com.yausername.youtubedl_android import YoutubeDL
         from com.yausername.ffmpeg import FFmpeg
         repair_native_cache(context)
@@ -108,14 +115,8 @@ def start(context, songs_path):
         cache = str(context.getCacheDir())
         os.environ['TMPDIR'] = cache
         tempfile.tempdir = cache
-        # Do not change HOME: Chaquopy owns it. Explicitly locate persisted data.
-        data = Path(str(context.getFilesDir())) / 'pikaraoke'
-        data.mkdir(parents=True, exist_ok=True)
-        Path(songs_path).mkdir(parents=True, exist_ok=True)
-
-        from pikaraoke.lib import get_platform, network, ffmpeg, youtube_dl
+        from pikaraoke.lib import network, ffmpeg, youtube_dl
         from org.pikaraoke.tv import AndroidPlatform
-        get_platform.get_data_directory = lambda: str(data)
         network.get_ip = lambda platform: str(AndroidPlatform.localIp(context))
         get_platform.get_installed_js_runtime = lambda: 'quickjs'
         youtube_dl.get_installed_js_runtime = get_platform.get_installed_js_runtime
@@ -131,6 +132,9 @@ def start(context, songs_path):
             return youtube_dl.get_youtubedl_version()
         youtube_dl.upgrade_youtubedl = update_ytdlp
         from pikaraoke.lib.preference_manager import PreferenceManager
+        # Older APKs kept a display copy; passwords now live only in upstream's
+        # hashed config storage. Removing the copy does not change that password.
+        context.getSharedPreferences('host', 0).edit().remove('initialPassword').apply()
         # gevent made ordinary config-file operations indivisible. Preserve
         # that property when requests now run on separate Android threads.
         def locked(method):
@@ -151,21 +155,13 @@ def start(context, songs_path):
         sys.argv = ['pikaraoke', '--port', '8080', '--headless', '--skip-ytdl-upgrade',
                     '--config-file-path', str(data / 'config.ini'),
                     '--download-path', str(songs_path), '--enable-mic-passthrough']
-        # Initialize a random per-install host password before opening the LAN.
-        from pikaraoke.lib.preference_manager import PreferenceManager
-        from pikaraoke.lib.admin_auth import AdminAuth
-        auth = AdminAuth(PreferenceManager(str(data / 'config.ini')))
-        if not auth.is_password_set():
-            import secrets
-            password = secrets.token_urlsafe(12)
-            auth.set_password(password)
-            context.getSharedPreferences('host', 0).edit().putString('initialPassword', password).apply()
-
+        # Upstream grants admin access while no password is configured, and
+        # preserves any password already stored in this installation.
         from pikaraoke import app
         _backend = app
         app.compile_translations = lambda: None  # Compiled during APK build.
-        from android_runtime.phone_mics import install as install_phone_mics
-        install_phone_mics(app.app, context)
+        from pikaraoke.integrations.android.phone_mics import install as install_phone_mics
+        install_phone_mics(app.app, context, lambda: AndroidPlatform.localIp(context))
         _status = 'Ready'
         app.main()
         normal_exit = True
@@ -190,7 +186,7 @@ def start(context, songs_path):
 
 
 def stop():
-    from android_runtime.phone_mics import stop as stop_phone_mics
+    from pikaraoke.integrations.android.phone_mics import stop as stop_phone_mics
     stop_phone_mics()
     if ready():
         _backend.app.config['KARAOKE_INSTANCE'].stop()
@@ -218,7 +214,7 @@ def network_changed():
         k.ip = str(AndroidPlatform.localIp(_context))
         k.url = f'http://{k.ip}:{k.port}'
         k.generate_qr_code()
-        from android_runtime.phone_mics import refresh_certificate
+        from pikaraoke.integrations.android.phone_mics import refresh_certificate
         refresh_certificate()
         k.socketio.emit('android_network_changed', {'url': k.url})
 
@@ -236,14 +232,8 @@ def native_action(action):
     elif action == 'restart': k.restart()
 
 
-def host_password():
-    """Only exposed to native code on the TV, never an HTTP endpoint."""
-    return str(_context.getSharedPreferences('host', 0).getString('initialPassword', '')) if _context else ''
-
-
 def set_host_password(password):
     if not ready():
         raise RuntimeError('The room is still starting')
     with _preferences_lock:
         _backend.app.config['ADMIN_AUTH'].set_password(password)
-        _context.getSharedPreferences('host', 0).edit().putString('initialPassword', password).apply()

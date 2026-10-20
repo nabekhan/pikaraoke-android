@@ -20,8 +20,9 @@
 - Use your phone to search, download, queue songs, and change settings.
 - On the TV, press **Back**, **Menu**, or **OK** for room options.
 - Media **Play/Pause** and **Next** control playback.
-- The host password appears on first launch. Change it in room settings.
-- Reset a forgotten password on the TV: **Host password → Set host password**.
+- New installs have no admin password. Admin access opens automatically while the password is blank.
+- Set or clear the password in room settings. Updates keep any password already set.
+- Reset a forgotten password on the TV: **Host password**.
 - **Stop room and exit** shuts down the server.
 
 ## Files
@@ -32,11 +33,14 @@
 - Some TVs need a file manager installed for import/export.
 - Songs and settings survive app updates.
 - Back up songs before uninstalling or clearing app data.
+- Set a folder limit in **Settings → Song storage**, in MB or GB. `0` turns it off.
+- On next app start, oldest songs are deleted until the folder is under the limit. File dates determine age; paired files are removed together.
+- Incomplete downloads and unrelated files are kept, so these can prevent reaching the limit.
 
 ## Phone microphones (prototype)
 
 - Up to four phones can sing through the TV at once.
-- Open **Mic** in the phone web interface.
+- Open the microphone icon in the phone web interface.
 - Uses the name you already entered in PiKaraoke.
 - Starting the mic opens HTTPS, with brief certificate install steps if needed.
 - On iPhone, also enable full trust under Settings → General → About → Certificate Trust Settings.
@@ -50,11 +54,12 @@
 
 ## Updates
 
-- GitHub checks PiKaraoke and yt-dlp weekly.
+- GitHub checks the [PiKaraoke fork](https://github.com/nabekhan/pikaraoke) and yt-dlp weekly.
+- The fork keeps the microphone UI, certificates, audio receiver, and storage limit. It merges original PiKaraoke updates weekly.
 - Updates are built, tested on an Android TV emulator, signed, and published to Releases.
 - Install the new APK on the TV to update.
 - For an immediate check, open [Actions](https://github.com/nabekhan/pikaraoke-android/actions/workflows/update-release.yml) and select **Run workflow**.
-- Upstream code is kept as a Git submodule in `upstream/`.
+- The fork is pinned as a Git submodule in `upstream/`. Android packaging and TV controls stay here.
 - [Workflow details](docs/automation.md).
 
 ## Build

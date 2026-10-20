@@ -105,10 +105,9 @@ public final class MainActivity extends Activity {
         playerSession.loadUri(ORIGIN + "/splash");
         player.requestFocus();
         status.setVisibility(View.GONE);
-        String initial = getSharedPreferences("host", 0).getString("initialPassword", "");
         if (!getSharedPreferences("host", 0).getBoolean("welcomeShown", false)) {
             new AlertDialog.Builder(this).setTitle("Your karaoke room is ready")
-                .setMessage("Connect phones to the same Wi-Fi, then scan the QR code.\n\nPress Back or Menu for room options.\n\nYour initial host password:\n" + initial + "\n\nChange it in the room settings.")
+                .setMessage("Connect phones to the same Wi-Fi, then scan the QR code.\n\nPress Back or Menu for room options.")
                 .setPositiveButton("Start singing", (d,w) -> getSharedPreferences("host", 0).edit().putBoolean("welcomeShown", true).apply()).show();
         }
     }
@@ -142,12 +141,7 @@ public final class MainActivity extends Activity {
                         files.putExtra("android.provider.extra.INITIAL_URI", android.provider.DocumentsContract.buildRootUri("org.pikaraoke.tv.songs", "songs"));
                         try { startActivityForResult(files, 20); } catch(ActivityNotFoundException e) { fileHelp(); }
                         break;
-                    case 6:
-                        String password = getSharedPreferences("host", 0).getString("initialPassword", "");
-                        new AlertDialog.Builder(this).setTitle("Host password")
-                            .setMessage("Password set on this TV: " + password + "\n\nIf you changed it from a phone, use your new password. Host access is separate from your device password.")
-                            .setPositiveButton("Close", null)
-                            .setNeutralButton("Set host password", (d,w) -> changePassword()).show(); break;
+                    case 6: changePassword(); break;
                     case 7:
                         if (!AndroidAudio.hasPermission(this)) requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 3);
                         else if (KaraokeService.instance != null) { KaraokeService.instance.enableMicrophoneForeground(); showRemote(); }
@@ -166,11 +160,11 @@ public final class MainActivity extends Activity {
         input.setSingleLine();
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Set host password")
-            .setMessage("Use at least 8 characters. Phones will need to sign in again for host controls.")
+            .setMessage("Use at least 8 characters, or leave blank for automatic admin access.")
             .setView(input).setPositiveButton("Save password", null).setNegativeButton("Cancel", null).create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String password=input.getText().toString();
-            if(password.length()<8) { input.setError("Use at least 8 characters"); return; }
+            if(!password.isEmpty() && password.length()<8) { input.setError("Use at least 8 characters, or leave blank"); return; }
             if(!opened || KaraokeService.instance==null) { input.setError("Open the room before changing its password"); return; }
             KaraokeService.call("set_host_password", password);
             dialog.dismiss();

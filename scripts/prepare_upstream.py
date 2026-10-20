@@ -44,13 +44,6 @@ def main():
     replace(DEST / 'templates/base.html', '</head>',
             '<script defer src="{{ url_for(\'static\', filename=\'android-tv.js\') }}"></script>\n</head>')
     shutil.copyfile(ROOT / 'app/src/main/assets/android-tv.js', DEST / 'static/android-tv.js')
-    (DEST / 'templates/android').mkdir(exist_ok=True)
-    shutil.copyfile(ROOT / 'app/src/main/assets/phone-mic.html', DEST / 'templates/android/phone-mic.html')
-    for name in ('phone-mic.js', 'phone-mic.css', 'phone-mic-worklet.js'):
-        shutil.copyfile(ROOT / 'app/src/main/assets' / name, DEST / 'static' / name)
-    replace(DEST / 'templates/base.html', '<a id="current-user"',
-            '<a id="phone-mic" class="navbar-item no-spa" href="/mic" title="Phone microphone">'
-            '<i class="icon-mic" aria-hidden="true"></i><span>Mic</span></a>\n        <a id="current-user"')
     for path in DEST.rglob('*.po'):
         with path.open('rb') as inp, path.with_suffix('.mo').open('wb') as out:
             write_mo(out, read_po(inp))
