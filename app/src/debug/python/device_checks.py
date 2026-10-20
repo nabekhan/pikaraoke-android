@@ -38,7 +38,7 @@ def seed_storage_quota(context):
         database.close()
 
 
-def check_phone_microphones(context, guest, root):
+def check_phone_microphones(context, guest, host, root):
     ca = Path(str(context.getNoBackupFilesDir())) / 'phone-mic-tls/ca.crt'
     trusted = Path(str(context.getCacheDir())) / 'qa-mic-ca.pem'
     trusted.write_text(ssl.DER_cert_to_PEM_cert(ca.read_bytes()))
@@ -51,19 +51,33 @@ def check_phone_microphones(context, guest, root):
         assert guest.post(root + '/api/phone-mics', json={'name':'HTTP refused'}, timeout=10).status_code == 403
         assert guest.post(secure + '/api/phone-mics', json={'name':'Origin refused'},
                           headers={'Origin':'https://other.invalid'}, verify=str(trusted), timeout=10).status_code == 403
+        assert guest.get(root + '/api/phone-mics', timeout=10).json()['max'] == 2
+        setting = {'pref':'max_phone_mics', 'val':'4'}
+        assert guest.post(root + '/api/change_preferences', data=setting, timeout=10).status_code == 403
+        for invalid in ['0', '5', '2.5']:
+            assert not host.post(root + '/api/change_preferences', data={**setting, 'val':invalid}, timeout=10).json()[0]
         for number in range(4):
+            if number == 2:
+                assert guest.post(secure + '/api/phone-mics', json={'name':'Third'}, verify=str(trusted), timeout=10).status_code == 409
+                assert host.post(root + '/api/change_preferences', data=setting, timeout=10).json()[0]
             response = guest.post(secure + '/api/phone-mics', json={'name':f'Phone {number+1}'}, verify=str(trusted), timeout=10)
             assert response.status_code == 201, response.status_code
             tokens.append(response.json()['id'])
         assert guest.post(secure + '/api/phone-mics', json={'name':'Fifth'}, verify=str(trusted), timeout=10).status_code == 409
         state = guest.get(secure + '/api/phone-mics', verify=str(trusted), timeout=10)
+        assert state.json()['max'] == 4
         assert len(state.json()['active']) == 4
         assert all(token not in state.text for token in tokens)
         assert guest.post(secure + '/api/phone-mics/' + tokens[0] + '/controls',
                           json={'gain':.4,'muted':True,'reverb':1}, verify=str(trusted), timeout=10).status_code == 200
+        assert host.post(root + '/api/change_preferences', data={**setting, 'val':'1'}, timeout=10).json()[0]
+        state = guest.get(root + '/api/phone-mics', timeout=10).json()
+        assert state['max'] == 1 and len(state['active']) == 4
+        assert guest.post(secure + '/api/phone-mics', json={'name':'Extra'}, verify=str(trusted), timeout=10).status_code == 409
     finally:
         for token in tokens:
             guest.delete(secure + '/api/phone-mics/' + token, verify=str(trusted), timeout=10)
+        assert host.post(root + '/api/change_preferences', data={'pref':'max_phone_mics', 'val':'2'}, timeout=10).json()[0]
         trusted.unlink(missing_ok=True)
 
 
@@ -116,7 +130,7 @@ def run(context):
         response = host.get(root + path)
         assert response.status_code == 200, (path, response.status_code, response.text[:200])
 
-    check_phone_microphones(context, guest, root)
+    check_phone_microphones(context, guest, host, root)
 
     filters = subprocess.check_output(['ffmpeg', '-hide_banner', '-filters']).decode()
     for name in ['rubberband', 'loudnorm']:
