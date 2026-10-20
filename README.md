@@ -39,7 +39,7 @@
 
 ## Phone microphones (prototype)
 
-- Up to four phones can sing through the TV at once.
+- Two phone mics by default. Choose 1–4 in **Settings → Playback and audio → Phone mic limit**.
 - Open the microphone icon in the phone web interface.
 - Uses the name you already entered in PiKaraoke.
 - Starting the mic opens HTTPS, with brief certificate install steps if needed.
