@@ -1,10 +1,10 @@
 {
   "automated": true,
-  "automation_run_id": "39351280627",
-  "release_tag": "v1.23.0-android.6",
+  "automation_run_id": "39382003184",
+  "release_tag": "v1.23.0-android.7",
   "universal_apk_alias": true,
-  "upstream_sha": "0966581b4f1892ced2560241226348d7ebc33706",
-  "version_code": 6,
-  "version_name": "1.23.0-android.6",
+  "upstream_sha": "a75ade133f0718f4b8270803da6cb562544dcdaf",
+  "version_code": 7,
+  "version_name": "1.23.0-android.7",
   "yt_dlp_version": "2026.08.19"
 }
