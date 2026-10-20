@@ -67,7 +67,7 @@
 
 ## Build
 
-- Install JDK 17, Python 3.11, and the Android SDK (platform 37.2, build-tools 36.0.0).
+- Install JDK 17, Python 3.11, and the Android SDK (platform 37.2, build-tools 36.0.0, NDK 28.2.13676358, CMake 3.22.1).
 - Set `ANDROID_HOME` to the SDK directory. Android Studio's SDK Manager can install the required SDK packages.
 
 ```sh
