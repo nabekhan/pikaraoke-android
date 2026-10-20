@@ -51,6 +51,7 @@
 - Disconnect to free a slot. Lost connections expire automatically.
 - Each TV generates its own certificates. Private keys stay in app storage.
 - Real phone compatibility and audible latency on physical TVs still need testing.
+- [Latency tests and tuning](https://github.com/nabekhan/pikaraoke/blob/master/docs/PHONE_MIC_LATENCY.md).
 
 ## Updates
 

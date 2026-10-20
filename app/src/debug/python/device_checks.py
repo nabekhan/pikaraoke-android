@@ -75,6 +75,9 @@ def run(context):
     host = requests.Session()
     fresh = guest.get(root + '/api/auth').json()
     assert fresh['authenticated'] and not fresh['password_required']
+    settings = guest.get(root + '/settings').text
+    assert 'Enter the administrator password' not in settings
+    assert 'id="song-storage-form"' in settings
     assert guest.post(root + '/api/change_preferences', data={'pref':'volume', 'val':'.85'}).json()[0]
     # Verify that adding a password restores the normal host/guest boundary.
     import secrets
@@ -179,6 +182,9 @@ def run(context):
         fresh = requests.Session()
         auth = fresh.get(root + '/api/auth').json()
         assert auth['authenticated'] and not auth['password_required']
+        settings = fresh.get(root + '/settings').text
+        assert 'Enter the administrator password' not in settings
+        assert 'id="song-storage-form"' in settings
         assert fresh.post(root + '/api/change_preferences', data={'pref':'volume', 'val':'.85'}).json()[0]
         from pikaraoke import VERSION
         return json.dumps({'download_to_file': True, 'tv_browser_playback_position': state['now_playing_position'],

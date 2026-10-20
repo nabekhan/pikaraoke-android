@@ -99,18 +99,15 @@ public final class MainActivity extends Activity {
         if (runtime == null) runtime = GeckoRuntime.create(getApplicationContext(), new GeckoRuntimeSettings.Builder()
             .consoleOutput(true).build());
         player = new GeckoView(this);
+        player.setTag("pikaraoke-player");
         playerSession = session();
         player.setSession(playerSession);
         layout.addView(player, new FrameLayout.LayoutParams(-1,-1));
         playerSession.loadUri(ORIGIN + "/splash");
-        player.requestFocus();
+        showPlayer();
         status.setVisibility(View.GONE);
-        if (!getSharedPreferences("host", 0).getBoolean("welcomeShown", false)) {
-            new AlertDialog.Builder(this).setTitle("Your karaoke room is ready")
-                .setMessage("Connect phones to the same Wi-Fi, then scan the QR code.\n\nPress Back or Menu for room options.")
-                .setPositiveButton("Start singing", (d,w) -> getSharedPreferences("host", 0).edit().putBoolean("welcomeShown", true).apply()).show();
-        }
     }
+
     private void showRemote() {
         if (!opened) return;
         if (remote == null) {

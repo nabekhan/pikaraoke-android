@@ -25,8 +25,7 @@ public class RoomIntegrationTest {
         Context context = instrumentation.getTargetContext();
         if (android.os.Build.VERSION.SDK_INT >= 33)
             instrumentation.getUiAutomation().grantRuntimePermission(context.getPackageName(), android.Manifest.permission.POST_NOTIFICATIONS);
-        // Suppress only the welcome overlay, which is tested manually with D-pad.
-        context.getSharedPreferences("host", 0).edit().putBoolean("welcomeShown", true).commit();
+        context.getSharedPreferences("host", 0).edit().remove("welcomeShown").commit();
         if (!Python.isStarted()) {
             com.chaquo.python.android.AndroidPlatform platform = new com.chaquo.python.android.AndroidPlatform(context);
             platform.redirectStdioToLogcat();
@@ -39,7 +38,7 @@ public class RoomIntegrationTest {
         java.io.File oldAudio = new java.io.File(folder, "quota-old.mp3");
         java.io.File oldGraphics = new java.io.File(folder, "quota-old.cdg");
         java.io.File retained = new java.io.File(folder, ".quota-keep");
-        instrumentation.startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        android.app.Activity activity = instrumentation.startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         long deadline = System.currentTimeMillis() + 90000;
         while(System.currentTimeMillis() < deadline) {
             if (Python.isStarted() && Python.getInstance().getModule("android_runtime.bootstrap").callAttr("ready").toBoolean()) break;
@@ -53,6 +52,13 @@ public class RoomIntegrationTest {
         assertFalse("CDG companion was not pruned with its audio", oldGraphics.exists());
         assertTrue("Unrelated file was removed", retained.exists());
         Thread.sleep(8000); // Allow the actual GeckoView player to connect.
+        instrumentation.runOnMainSync(() -> {
+            android.view.View player = activity.findViewById(android.R.id.content).findViewWithTag("pikaraoke-player");
+            assertNotNull("Player was not created automatically", player);
+            assertTrue("First boot did not show the player", player.isShown());
+            assertTrue("A first-boot prompt is covering the player", activity.hasWindowFocus());
+            assertTrue("Player did not receive focus automatically", player.hasFocus());
+        });
         screenshot(instrumentation, "room");
         String report = Python.getInstance().getModule("device_checks").callAttr("run", context).toString();
         screenshot(instrumentation, "playing");
