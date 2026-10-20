@@ -150,6 +150,7 @@ jobs:
       - name: "Build unsigned releases and test the actual Android TV app"
         uses: "reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d"
         with:
+          pre-emulator-launch-script: adb start-server
           api-level: 36
           target: "android-tv"
           arch: "x86_64"

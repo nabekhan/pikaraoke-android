@@ -73,6 +73,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - uses: reactivecircus/android-emulator-runner@v2
         with:
+          pre-emulator-launch-script: adb start-server
           api-level: 36
           target: android-tv
           arch: x86_64
