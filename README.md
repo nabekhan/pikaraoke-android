@@ -47,10 +47,12 @@
 - Phones need the same local network as the TV. Audio stays on that network.
 - Slide the mic up to connect, down to disconnect. Taps do not switch it on or off.
 - Tap the volume or reverb icon to adjust it.
+- Android enters full screen when the mic starts. Use the full-screen icon to switch back.
+- Tap the lock to block controls. Hold it for 1.4 seconds to unlock.
 - The top-right button returns to PiKaraoke and disconnects the mic.
 - Disconnect to free a slot. Lost connections expire automatically.
 - Each TV generates its own certificates. Private keys stay in app storage.
-- Real phone compatibility and audible latency on physical TVs still need testing.
+- Latency depends on the phone, Wi-Fi, and TV.
 - [Latency tests and tuning](https://github.com/nabekhan/pikaraoke/blob/master/docs/PHONE_MIC_LATENCY.md).
 
 ## Updates
