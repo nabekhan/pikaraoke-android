@@ -38,7 +38,7 @@ jobs:
           sdkmanager 'platforms;android-37.2' 'build-tools;36.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
           echo "PIKARAOKE_BUILD_PYTHON=$(command -v python3)" >> "$GITHUB_ENV"
       - run: ./gradlew assembleDebug assembleDebugAndroidTest --console=plain
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: debug-apks
           path: app/build/outputs/apk/debug/*.apk
@@ -81,12 +81,12 @@ jobs:
           disk-size: 2048M
           ram-size: 2048M
           script: bash scripts/run_device_checks.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: device-test-reports
           path: app/build/reports/androidTests/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: tv-screenshots
