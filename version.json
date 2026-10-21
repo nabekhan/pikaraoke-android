@@ -1,10 +1,10 @@
 {
   "automated": true,
-  "automation_run_id": "39517399628",
-  "release_tag": "v1.23.0-android.12",
+  "automation_run_id": "39539534487",
+  "release_tag": "v1.23.0-android.13",
   "universal_apk_alias": true,
-  "upstream_sha": "458a73ba5f125e331e66d67340cd10916d79620d",
-  "version_code": 12,
-  "version_name": "1.23.0-android.12",
+  "upstream_sha": "4245483fa515b0d3a5e46c97f508b4094a43eff6",
+  "version_code": 13,
+  "version_name": "1.23.0-android.13",
   "yt_dlp_version": "2026.08.19"
 }
