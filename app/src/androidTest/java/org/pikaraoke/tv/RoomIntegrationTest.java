@@ -59,11 +59,35 @@ public class RoomIntegrationTest {
             assertTrue("A first-boot prompt is covering the player", activity.hasWindowFocus());
             assertTrue("Player did not receive focus automatically", player.hasFocus());
         });
+        // A launch from adb/notification followed by the TV launcher must reuse
+        // this Activity rather than leave two players decoding in one task.
+        android.view.View originalPlayer = activity.findViewById(android.R.id.content).findViewWithTag("pikaraoke-player");
+        context.startActivity(new Intent(Intent.ACTION_MAIN)
+            .setComponent(new ComponentName(context, MainActivity.class))
+            .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        instrumentation.waitForIdleSync();
+        Thread.sleep(1000);
+        instrumentation.runOnMainSync(() -> {
+            assertTrue("Launcher opened a second player Activity", activity.hasWindowFocus());
+            assertSame("Reopening replaced the player", originalPlayer,
+                activity.findViewById(android.R.id.content).findViewWithTag("pikaraoke-player"));
+            android.app.ActivityManager manager = context.getSystemService(android.app.ActivityManager.class);
+            boolean found = false;
+            for (android.app.ActivityManager.AppTask task : manager.getAppTasks()) {
+                if (task.getTaskInfo().taskId == activity.getTaskId()) {
+                    assertEquals("Multiple players remain in the task", 1, task.getTaskInfo().numActivities);
+                    found = true;
+                }
+            }
+            assertTrue("Player task was not found", found);
+        });
         screenshot(instrumentation, "room");
         String report = Python.getInstance().getModule("device_checks").callAttr("run", context).toString();
         screenshot(instrumentation, "playing");
         android.util.Log.i("PiKaraokeIntegration", report);
         assertTrue(report, report.contains("\"download_to_file\": true"));
+        assertTrue(report, report.contains("\"queued_song_transition\": true"));
         assertTrue(report, report.contains("\"song_storage_startup_and_settings\": true"));
         android.net.Uri roots = android.provider.DocumentsContract.buildRootsUri("org.pikaraoke.tv.songs");
         try (android.database.Cursor cursor = context.getContentResolver().query(roots, new String[]{"title"}, null, null, null)) {

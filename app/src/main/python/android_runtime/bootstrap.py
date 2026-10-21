@@ -162,7 +162,7 @@ def start(context, songs_path):
         app.compile_translations = lambda: None  # Compiled during APK build.
         from pikaraoke.integrations.android.phone_mics import install as install_phone_mics
         install_phone_mics(app.app, context, lambda: AndroidPlatform.localIp(context))
-        _status = 'Ready'
+        _status = 'Starting player…'
         app.main()
         normal_exit = True
     except SystemExit as exc:

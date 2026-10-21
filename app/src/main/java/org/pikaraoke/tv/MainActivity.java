@@ -44,6 +44,13 @@ public final class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 2);
         io.execute(this::waitForServer);
     }
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        // The launcher and room notification share the existing player.
+        // A second Activity would keep another decoder and splash socket alive.
+        if (opened) showPlayer();
+    }
     private void waitForServer() {
         for (int attempt = 0; attempt < 180 && !destroyed; attempt++) {
             try {
@@ -55,7 +62,7 @@ public final class MainActivity extends Activity {
             KaraokeService service = KaraokeService.instance;
             if (service != null) {
                 String text = service.status();
-                handler.post(() -> status.setText(text + "\nPress Back for room options."));
+                handler.post(() -> status.setText(text));
                 if (text.contains("could not start")) return;
             }
             try { Thread.sleep(500); } catch (InterruptedException e) { return; }
@@ -96,6 +103,7 @@ public final class MainActivity extends Activity {
     private void openRoom() {
         if (destroyed || opened) return;
         opened = true;
+        status.setText("Starting player…");
         if (runtime == null) runtime = GeckoRuntime.create(getApplicationContext(), new GeckoRuntimeSettings.Builder()
             .consoleOutput(true).build());
         player = new GeckoView(this);

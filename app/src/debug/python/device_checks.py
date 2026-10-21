@@ -171,7 +171,16 @@ def run(context):
         song = str(next(iter(downloaded)))
         probe = json.loads(subprocess.check_output(['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_format', song]))
         assert float(probe['format']['duration']) >= 23
-        assert guest.post(root + '/api/enqueue', data={'song_to_add': song, 'song_added_by': 'Android integration'}).status_code == 200
+        # Let the real player finish one song and start a different queued
+        # source. A single-song check misses native HLS decoder handoff faults.
+        assert host.post(root + '/api/change_preferences', data={'pref':'disable_score', 'val':'True'}).json()[0]
+        second_song = Path(k.download_path) / 'Android-transition.mp4'
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', song, '-t', '16',
+                        '-vf', 'scale=320:180', '-c:v', 'libx264', '-preset', 'ultrafast',
+                        '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-ar', '44100', str(second_song)], check=True, timeout=45)
+        bootstrap.refresh_library()
+        assert guest.post(root + '/api/enqueue', data={'song_to_add': song, 'song_added_by': 'Android integration'}).json()['success'][0]
+        assert guest.post(root + '/api/enqueue', data={'song_to_add': str(second_song), 'song_added_by': 'Android integration'}).json()['success'][0]
         # Require real browser beacons. Setting is_playing alone would pass even
         # with a broken TV browser, codec, autoplay policy or Socket.IO session.
         deadline = time.monotonic() + 50
@@ -181,10 +190,20 @@ def run(context):
                 break
             time.sleep(.5)
         assert (state.get('now_playing_position') or 0) > 2, state
+        assert state['now_playing_duration'] >= 23, state
+        first_playback = state['playback_id']
         assert host.post(root + '/api/pause').status_code == 200
-        time.sleep(.5)
+        time.sleep(1.5)  # The browser's pause fade lasts one second.
         assert k.playback_controller.is_paused
         assert host.post(root + '/api/pause').status_code == 200
+        deadline = time.monotonic() + 65
+        while time.monotonic() < deadline:
+            state = guest.get(root + '/api/now_playing').json()
+            if state.get('playback_id') not in (None, first_playback) and (state.get('now_playing_position') or 0) > 7:
+                break
+            time.sleep(.5)
+        assert state.get('playback_id') not in (None, first_playback), state
+        assert (state.get('now_playing_position') or 0) > 7, state
         # Pitch processing must survive an actual ffmpeg run, not just -filters.
         pitched = source_dir / 'pitched.m4a'
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', song, '-vn', '-af', 'rubberband=pitch=1.122462,loudnorm', '-t', '2', str(pitched)], check=True, timeout=30)
@@ -202,6 +221,7 @@ def run(context):
         assert fresh.post(root + '/api/change_preferences', data={'pref':'volume', 'val':'.85'}).json()[0]
         from pikaraoke import VERSION
         return json.dumps({'download_to_file': True, 'tv_browser_playback_position': state['now_playing_position'],
+                           'queued_song_transition': True,
                            'song_storage_startup_and_settings': True,
                            'blank_password_auto_admin': True,
                            'phone_api_and_auth': True, 'phone_mic_https_and_four_slots': True, 'pitch_and_normalization': True,
