@@ -38,7 +38,7 @@ jobs:
       repair_latest: "${{ steps.plan.outputs.repair_latest }}"
       base_sha: "${{ steps.plan.outputs.base_sha }}"
     steps:
-      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+      - uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
         with:
           ref: "main"
           persist-credentials: false
@@ -75,7 +75,7 @@ jobs:
     permissions:
       contents: "write"
     steps:
-      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+      - uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
         with:
           ref: "${{ needs.prepare.outputs.base_sha }}"
           persist-credentials: false
@@ -95,7 +95,7 @@ jobs:
     steps:
       - name: "Make room for APKs and Android TV"
         run: "sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/lib/android/sdk/ndk"
-      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+      - uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
         with:
           ref: "${{ needs.prepare.outputs.base_sha }}"
           persist-credentials: false
@@ -190,7 +190,7 @@ jobs:
     timeout-minutes: 20
     environment: "android-release"
     steps:
-      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+      - uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
         with:
           ref: "${{ needs.prepare.outputs.base_sha }}"
           persist-credentials: false
@@ -238,7 +238,7 @@ jobs:
     permissions:
       contents: "write"
     steps:
-      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+      - uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
         with:
           ref: "${{ needs.prepare.outputs.base_sha }}"
           persist-credentials: false
