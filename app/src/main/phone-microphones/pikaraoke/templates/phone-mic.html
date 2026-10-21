@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>PiKaraoke Mic</title>
+  <link rel="icon" href="{{ mic_config.base_path }}/static/images/microphone.png">
+  <link rel="stylesheet" href="{{ mic_config.base_path }}/static/bulma.min.css">
+  <link rel="stylesheet" href="{{ mic_config.base_path }}/static/custom.css">
+  <link rel="stylesheet" href="{{ mic_config.base_path }}/static/phone-mic.css?v={{ mic_config.asset_version }}">
+</head>
+<body>
+  <main class="mic-app">
+    <button id="lock-toggle" class="mic-tool lock-toggle" type="button" aria-label="Lock controls" title="Lock controls" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path class="lock-open" d="M8 10V6a4 4 0 0 1 8 0"/><path class="lock-closed" d="M8 10V6a4 4 0 0 1 8 0v4"/></svg></button>
+    <p id="lock-hint" class="lock-hint" role="status" hidden>Hold to unlock</p>
+    <button id="fullscreen-toggle" class="mic-tool fullscreen-toggle" type="button" aria-label="Full screen" title="Full screen" aria-pressed="false" data-lockable><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></svg></button>
+    <a id="back-link" class="mic-tool back-link" href="/" aria-label="Back to PiKaraoke" title="Back to PiKaraoke" data-lockable><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></a>
+    <div class="mic-console" data-lockable>
+    <section class="mic-stage" aria-label="Microphone">
+      <div id="mic-toggle" class="mic-toggle" role="slider" tabindex="0" aria-label="Microphone" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" aria-valuetext="Off. Slide up to turn on." aria-describedby="mic-status">
+        <span class="mic-handle" aria-hidden="true"><svg class="mic-icon" viewBox="0 0 64 64"><rect x="22" y="7" width="20" height="32" rx="10"/><path d="M15 31a17 17 0 0 0 34 0M32 48v9M22 57h20"/></svg></span>
+      </div>
+      <p id="mic-status" class="status" role="status" hidden></p>
+      <div class="level" aria-label="Live microphone level"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </section>
+
+    <section class="effects" aria-label="Microphone controls">
+      <div class="effect">
+        <button id="volume-toggle" class="effect-button" type="button" aria-label="Microphone volume: 30%" aria-expanded="false" aria-controls="volume-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zM16 8a6 6 0 0 1 0 8M19 5a10 10 0 0 1 0 14"/></svg><span>Volume</span>
+        </button>
+        <div id="volume-panel" class="effect-panel volume-panel" hidden>
+          <label class="is-sr-only" for="gain">Mic volume</label>
+          <input id="gain" type="range" min="0" max="100" value="30">
+          <output id="gain-value" for="gain">30%</output>
+        </div>
+      </div>
+      <div class="effect">
+        <button id="reverb" class="effect-button" type="button" aria-label="Mic reverb: Off" aria-expanded="false" aria-controls="reverb-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 1 9-9 7 7 0 1 1-7-7 5 5 0 1 1-5 5 3 3 0 1 1 3 3"/></svg><span>Reverb</span>
+        </button>
+        <div id="reverb-panel" class="effect-panel reverb-panel" role="group" aria-label="Mic reverb" hidden>
+          <button class="button is-small" type="button" data-reverb="0" aria-pressed="true">Off</button>
+          <button class="button is-small" type="button" data-reverb="1" aria-pressed="false">Room</button>
+          <button class="button is-small" type="button" data-reverb="2" aria-pressed="false">Hall</button>
+          <button class="button is-small" type="button" data-reverb="3" aria-pressed="false">Stage</button>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <dialog id="certificate-panel" class="certificate-panel" aria-labelledby="certificate-title" hidden>
+      <button id="certificate-close" class="certificate-close" type="button" aria-label="Close certificate setup">×</button>
+      <h1 id="certificate-title">Enable mic</h1>
+      <p id="certificate-instructions">Install this certificate as a trusted CA.</p>
+      <div class="certificate-actions">
+        <a id="ca-link" class="button is-small" href="#">Download certificate</a>
+        <a id="secure-link" class="button is-link is-small" href="#">Open HTTPS</a>
+      </div>
+    </dialog>
+
+    <section class="slots" aria-label="Microphones">
+      <ol id="slot-list" class="slot-list"></ol>
+    </section>
+
+  </main>
+  <script>window.phoneMicConfig = {{ mic_config|tojson }};</script>
+  <script src="{{ mic_config.base_path }}/static/phone-mic.js?v={{ mic_config.asset_version }}"></script>
+</body>
+</html>

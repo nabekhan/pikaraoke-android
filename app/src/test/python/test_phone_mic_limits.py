@@ -18,7 +18,7 @@ from flask_babel import Babel
 # Karaoke import. This is a host-side admission test, with no Android runtime.
 ROOT = Path(__file__).resolve().parents[4]
 package = types.ModuleType("pikaraoke")
-package.__path__ = [str(ROOT / "upstream/pikaraoke")]
+package.__path__ = [str(ROOT / "app/build/generated/python/pikaraoke")]
 auth = types.ModuleType("pikaraoke.lib.auth")
 auth.public = lambda view: view
 with patch.dict(sys.modules, {"pikaraoke": package, "pikaraoke.lib.auth": auth}):
