@@ -9,8 +9,6 @@ android {
     sourceSets.main.res.srcDir 'build/generated/ytdlp/res'
     sourceSets.main.res.srcDir 'build/generated/branding/res'
     sourceSets.main.assets.srcDir 'build/generated/notices'
-    sourceSets.main.java.srcDir rootProject.file('upstream/integrations/android/src/main/java')
-    sourceSets.androidTest.java.srcDir rootProject.file('upstream/integrations/android/src/androidTest/java')
     defaultConfig {
         applicationId 'org.pikaraoke.tv'
         minSdk 26
@@ -23,7 +21,7 @@ android {
     }
     externalNativeBuild {
         cmake {
-            path rootProject.file('upstream/integrations/android/CMakeLists.txt')
+            path rootProject.file('app/src/main/c/CMakeLists.txt')
             version '3.22.1'
         }
     }

@@ -1,0 +1,132 @@
+{
+  "date": "2026-10-20",
+  "scope": "Local generated PCM. Transport echo RTT/2 and separately simulated receiver timing; excludes physical phone/network/audio output.",
+  "transport": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "note": "Local synthetic PCM echo RTT/2. Excludes microphone hardware, Wi-Fi, TV receiver and output hardware. No packet loss injected.",
+    "results": [
+      {
+        "transport": "webrtc-unreliable",
+        "frames": 256,
+        "packetization_ms": 5.333,
+        "estimated_one_way_loopback": {
+          "samples": 280,
+          "median_ms": 0.3,
+          "p95_ms": 0.55
+        },
+        "worklet_main_thread_age_ms": {
+          "samples": 280,
+          "median_ms": 0,
+          "p95_ms": 0
+        },
+        "missing": 0,
+        "corrupt": 0
+      },
+      {
+        "transport": "webrtc-unreliable",
+        "frames": 128,
+        "packetization_ms": 2.667,
+        "estimated_one_way_loopback": {
+          "samples": 280,
+          "median_ms": 0.35,
+          "p95_ms": 0.65
+        },
+        "worklet_main_thread_age_ms": {
+          "samples": 280,
+          "median_ms": 0,
+          "p95_ms": 2.667
+        },
+        "missing": 0,
+        "corrupt": 0
+      },
+      {
+        "transport": "webrtc-reliable",
+        "frames": 256,
+        "packetization_ms": 5.333,
+        "estimated_one_way_loopback": {
+          "samples": 280,
+          "median_ms": 0.3,
+          "p95_ms": 0.65
+        },
+        "worklet_main_thread_age_ms": {
+          "samples": 280,
+          "median_ms": 0,
+          "p95_ms": 0
+        },
+        "missing": 0,
+        "corrupt": 0
+      },
+      {
+        "transport": "webrtc-reliable",
+        "frames": 128,
+        "packetization_ms": 2.667,
+        "estimated_one_way_loopback": {
+          "samples": 280,
+          "median_ms": 0.35,
+          "p95_ms": 0.75
+        },
+        "worklet_main_thread_age_ms": {
+          "samples": 280,
+          "median_ms": 0,
+          "p95_ms": 2.667
+        },
+        "missing": 0,
+        "corrupt": 0
+      },
+      {
+        "transport": "websocket",
+        "frames": 256,
+        "packetization_ms": 5.333,
+        "estimated_one_way_loopback": {
+          "samples": 280,
+          "median_ms": 0.2,
+          "p95_ms": 0.6
+        },
+        "worklet_main_thread_age_ms": {
+          "samples": 280,
+          "median_ms": 0,
+          "p95_ms": 0
+        },
+        "missing": 0,
+        "corrupt": 0
+      },
+      {
+        "transport": "websocket",
+        "frames": 128,
+        "packetization_ms": 2.667,
+        "estimated_one_way_loopback": {
+          "samples": 280,
+          "median_ms": 0.2,
+          "p95_ms": 0.55
+        },
+        "worklet_main_thread_age_ms": {
+          "samples": 280,
+          "median_ms": 0,
+          "p95_ms": 2.667
+        },
+        "missing": 0,
+        "corrupt": 0
+      }
+    ]
+  },
+  "receiver_baseline": [
+    "packet=256 jitter_ms=0 pulses=50 median_ms=25.00 p95_ms=25.00 underruns=0 discarded=0",
+    "packet=256 jitter_ms=3 pulses=50 median_ms=25.42 p95_ms=25.67 underruns=0 discarded=0",
+    "packet=256 jitter_ms=8 pulses=50 median_ms=29.90 p95_ms=30.00 underruns=0 discarded=0",
+    "packet=256 jitter_ms=15 pulses=50 median_ms=38.48 p95_ms=39.79 underruns=0 discarded=0",
+    "packet=128 jitter_ms=0 pulses=49 median_ms=24.46 p95_ms=24.94 underruns=0 discarded=0",
+    "packet=128 jitter_ms=3 pulses=49 median_ms=24.83 p95_ms=24.98 underruns=0 discarded=0",
+    "packet=128 jitter_ms=8 pulses=49 median_ms=29.29 p95_ms=29.92 underruns=0 discarded=0",
+    "packet=128 jitter_ms=15 pulses=49 median_ms=30.04 p95_ms=30.06 underruns=0 discarded=0"
+  ],
+  "receiver_updated": [
+    "packet=256 jitter_ms=0 pulses=50 median_ms=15.00 p95_ms=15.00 underruns=0 discarded=0",
+    "packet=256 jitter_ms=3 pulses=50 median_ms=15.42 p95_ms=15.67 underruns=0 discarded=0",
+    "packet=256 jitter_ms=8 pulses=50 median_ms=19.90 p95_ms=20.00 underruns=0 discarded=0",
+    "packet=256 jitter_ms=15 pulses=50 median_ms=34.25 p95_ms=34.63 underruns=2 discarded=0",
+    "packet=128 jitter_ms=0 pulses=49 median_ms=14.46 p95_ms=14.94 underruns=0 discarded=0",
+    "packet=128 jitter_ms=3 pulses=49 median_ms=14.83 p95_ms=14.98 underruns=0 discarded=0",
+    "packet=128 jitter_ms=8 pulses=49 median_ms=19.29 p95_ms=19.92 underruns=0 discarded=0",
+    "packet=128 jitter_ms=15 pulses=49 median_ms=23.96 p95_ms=24.88 underruns=0 discarded=0"
+  ]
+}

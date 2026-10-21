@@ -54,12 +54,12 @@
 - Disconnect to free a slot. Lost connections expire automatically.
 - Each TV generates its own certificates. Private keys stay in app storage.
 - Latency depends on the phone, Wi-Fi, and TV.
-- [Latency tests and tuning](https://github.com/nabekhan/pikaraoke/blob/master/docs/PHONE_MIC_LATENCY.md).
+- [Latency tests and tuning](docs/PHONE_MIC_LATENCY.md).
 
 ## Updates
 
 - GitHub checks the [PiKaraoke fork](https://github.com/nabekhan/pikaraoke) and yt-dlp weekly.
-- The fork keeps the microphone UI, certificates, audio receiver, and storage limit. It merges original PiKaraoke updates weekly.
+- The fork keeps the microphone UI and storage limit. This app provides the certificates and audio receiver. The fork merges original PiKaraoke updates weekly.
 - Updates are built, tested on an Android TV emulator, signed, and published to Releases.
 - Install the new APK on the TV to update.
 - For an immediate check, open [Actions](https://github.com/nabekhan/pikaraoke-android/actions/workflows/update-release.yml) and select **Run workflow**.

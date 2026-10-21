@@ -160,7 +160,7 @@ def start(context, songs_path):
         from pikaraoke import app
         _backend = app
         app.compile_translations = lambda: None  # Compiled during APK build.
-        from pikaraoke.integrations.android.phone_mics import install as install_phone_mics
+        from android_runtime.phone_mics import install as install_phone_mics
         install_phone_mics(app.app, context, lambda: AndroidPlatform.localIp(context))
         _status = 'Starting player…'
         app.main()
@@ -186,7 +186,7 @@ def start(context, songs_path):
 
 
 def stop():
-    from pikaraoke.integrations.android.phone_mics import stop as stop_phone_mics
+    from android_runtime.phone_mics import stop as stop_phone_mics
     stop_phone_mics()
     if ready():
         _backend.app.config['KARAOKE_INSTANCE'].stop()
@@ -214,7 +214,7 @@ def network_changed():
         k.ip = str(AndroidPlatform.localIp(_context))
         k.url = f'http://{k.ip}:{k.port}'
         k.generate_qr_code()
-        from pikaraoke.integrations.android.phone_mics import refresh_certificate
+        from android_runtime.phone_mics import refresh_certificate
         refresh_certificate()
         k.socketio.emit('android_network_changed', {'url': k.url})
 

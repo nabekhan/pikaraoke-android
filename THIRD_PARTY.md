@@ -24,14 +24,14 @@ Their source, notices, and license terms remain with their respective projects:
 
 Phone audio uses JackTrip's documented DEFAULT packet layout (mono PCM16) over
 an unordered, unreliable WebRTC data channel. The packet parser and bounded
-receiver/mixer are in the PiKaraoke fork; this does not bundle the JackTrip app or
+receiver/mixer are in this Android TV repository; this does not bundle the JackTrip app or
 claim compatibility with its complete signaling protocol. Reference:
 https://github.com/jacktrip/jacktrip/blob/v3.0.1/docs/Documentation/NetworkProtocol.md.
 The interface follows Apple Music Sing's microphone layout using our own HTML,
 CSS, and SVG icons; no Apple artwork or application code is included.
 
-The PiKaraoke fork retains the original history and holds shared features and
-receiver integrations. The Android build generates platform adaptations only
-under `app/build/`. Packaging and TV controls are in this repository. GeckoView includes its own runtime `about:license` notices.
+The PiKaraoke fork retains the original history and holds shared features. The
+Android receiver, platform adaptations, packaging, and TV controls are in this
+repository. GeckoView includes its own runtime `about:license` notices.
 The launcher artwork is taken unchanged from upstream's `static/icons/logo.ico`
 during the build.

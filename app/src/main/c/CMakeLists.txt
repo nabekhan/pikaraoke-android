@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.22)
+project(pikaraoke_phone_audio LANGUAGES C)
+add_library(pikaraoke_phone_audio SHARED phone_mic_audio.c)
+set_target_properties(pikaraoke_phone_audio PROPERTIES C_STANDARD 11)
+target_link_libraries(pikaraoke_phone_audio aaudio)
