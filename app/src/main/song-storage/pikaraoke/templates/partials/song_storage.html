@@ -1,0 +1,52 @@
+<header class="card-header py-3 px-5 collapsible-header is-collapsed">
+	<div>
+		<h3 class="m-0">{% trans %}Song storage{% endtrans %}</h3>
+		<span class="section-summary is-size-7 has-text-grey-light">{% trans %}Folder limit and startup cleanup{% endtrans %}</span>
+	</div>
+</header>
+<div class="collapsible-content panel is-shadowless mb-0">
+	<form id="song-storage-form" class="px-5 py-4" data-limit-bytes="{{ max_song_storage_bytes }}">
+		<label for="song-storage-limit" class="label">{% trans %}Folder limit{% endtrans %}</label>
+		<div class="field is-grouped is-grouped-multiline">
+			<div class="control"><input id="song-storage-limit" class="input" style="width:8rem" type="number" min="0" step="any" required aria-describedby="song-storage-help"></div>
+			<div class="control"><div class="select"><select id="song-storage-unit" aria-label="{% trans %}Storage unit{% endtrans %}"><option value="1000000">MB</option><option value="1000000000">GB</option></select></div></div>
+			<div class="control"><button type="submit" class="button is-primary">{% trans %}Save{% endtrans %}</button></div>
+		</div>
+		<p id="song-storage-help" class="help">{% trans %}On next start, oldest songs are removed until the folder is within this limit. 0 = off.{% endtrans %}</p>
+		{% if song_storage_unmet %}<p class="help is-warning">{% trans %}Some files could not be removed. Check the song folder.{% endtrans %}</p>{% endif %}
+	</form>
+</div>
+<hr class="my-0">
+<script>
+$(function () {
+	const form = document.getElementById('song-storage-form');
+	if (!form || form.dataset.storageInitialized) return;
+	form.dataset.storageInitialized = '1';
+	const input = document.getElementById('song-storage-limit');
+	const unit = document.getElementById('song-storage-unit');
+	const saved = Number(form.dataset.limitBytes);
+	unit.value = saved === 0 || saved >= 1000000000 ? '1000000000' : '1000000';
+	input.value = String(saved / Number(unit.value));
+	input.addEventListener('input', () => input.setCustomValidity(''));
+	unit.addEventListener('change', () => input.setCustomValidity(''));
+	form.addEventListener('submit', function (event) {
+		event.preventDefault();
+		const value = input.valueAsNumber;
+		const bytes = Math.round(value * Number(unit.value));
+		if (!Number.isFinite(value) || value < 0 || !Number.isSafeInteger(bytes) || (value > 0 && bytes === 0)) {
+			input.setCustomValidity({{ _('Enter a valid storage limit. Use 0 to turn it off.') | tojson }});
+			input.reportValidity();
+			return;
+		}
+		const button = form.querySelector('button');
+		button.disabled = true;
+		$.post({{ url_for('preferences.change_preferences') | tojson }}, {
+			pref: 'max_song_storage_bytes', val: String(bytes)
+		}).done(function (data) {
+			showNotification(data[0] ? {{ _('Storage limit saved. Applies on next start.') | tojson }} : data[1], data[0] ? 'is-success' : 'is-danger');
+		}).fail(function () {
+			showNotification({{ _('Could not save the limit. Try again.') | tojson }}, 'is-danger');
+		}).always(function () { button.disabled = false; });
+	});
+});
+</script>

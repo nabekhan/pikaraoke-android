@@ -10,7 +10,7 @@ Their source, notices, and license terms remain with their respective projects:
 
 | Component | Version/source |
 | --- | --- |
-| PiKaraoke | Pinned `upstream/` submodule: https://github.com/nabekhan/pikaraoke, forked from https://github.com/vicwomg/pikaraoke |
+| PiKaraoke | Pinned `upstream/` submodule: https://github.com/vicwomg/pikaraoke |
 | Chaquopy | 17.0.0, https://github.com/chaquo/chaquopy |
 | CPython | 3.11 via Chaquopy and native downloader Python via youtubedl-android, https://github.com/python/cpython |
 | GeckoView | 158.0.20261007201254, https://archive.mozilla.org/pub/firefox/releases/158.0/source/ and https://hg.mozilla.org/releases/mozilla-release/ |
@@ -30,8 +30,8 @@ https://github.com/jacktrip/jacktrip/blob/v3.0.1/docs/Documentation/NetworkProto
 The interface follows Apple Music Sing's microphone layout using our own HTML,
 CSS, and SVG icons; no Apple artwork or application code is included.
 
-The PiKaraoke fork retains the original history and holds shared features. The
-Android receiver, platform adaptations, packaging, and TV controls are in this
-repository. GeckoView includes its own runtime `about:license` notices.
+The Android repository holds the receiver, platform adaptations, storage cleanup,
+playback handoff, packaging, and TV controls. GeckoView includes its own runtime
+`about:license` notices.
 The launcher artwork is taken unchanged from upstream's `static/icons/logo.ico`
 during the build.

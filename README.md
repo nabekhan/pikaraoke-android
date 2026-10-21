@@ -58,12 +58,12 @@
 
 ## Updates
 
-- GitHub checks the [PiKaraoke fork](https://github.com/nabekhan/pikaraoke) and yt-dlp weekly.
-- The fork keeps the storage limit and playback fix. The complete phone-mic feature is in this app. The fork merges original PiKaraoke updates weekly.
+- GitHub checks [PiKaraoke](https://github.com/vicwomg/pikaraoke) and yt-dlp weekly.
+- This app adds the storage limit, playback handoff, phone microphones, Android packaging, and TV controls.
 - Updates are built, tested on an Android TV emulator, signed, and published to Releases.
 - Install the new APK on the TV to update.
 - For an immediate check, open [Actions](https://github.com/nabekhan/pikaraoke-android/actions/workflows/update-release.yml) and select **Run workflow**.
-- The fork is pinned as a Git submodule in `upstream/`. Android packaging, TV controls and phone microphones stay here.
+- PiKaraoke is pinned as a Git submodule in `upstream/`.
 - Phone-mic code: [feature/phone-microphones](https://github.com/nabekhan/pikaraoke-android/tree/feature/phone-microphones). The APK includes it.
 - [Workflow details](docs/automation.md).
 

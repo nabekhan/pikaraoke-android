@@ -6,11 +6,9 @@ to the Android application, build scripts, tests, or update pins on main also
 request a new release. All tools and emulators run on disposable GitHub runners;
 a local Android SDK or running computer is unnecessary.
 
-The updater follows the default branch of nabekhan/pikaraoke, retaining an exact
-submodule commit. That fork merges vicwomg/pikaraoke weekly at 07:23 UTC, before
-the Android check. Merge conflicts stop the sync for manual resolution; history
-is never rewritten. Storage and playback changes live in the fork. The complete
-phone-mic feature, Android packaging, and TV controls live here. It checks the
+The updater follows the default branch of vicwomg/pikaraoke, retaining an exact
+submodule commit. Android-owned storage cleanup, playback handoff, phone
+microphones, packaging, and TV controls are applied during the build. It checks the
 latest stable yt-dlp release and records the
 official zipapp SHA-256 in ytdlp.json. Python dependencies come from upstream's
 pyproject.toml, with the Android replacements excluded and simple-websocket

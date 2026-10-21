@@ -33,7 +33,7 @@ NODE_PATH=/path/to/node_modules CHROME_EXECUTABLE=/path/to/chrome node app/src/t
 ## Receiver test
 
 - `PhoneMicLatencyCheck.java` sends timed PCM pulses through the actual `PhoneMicBuffer`, with a simulated 5 ms mixer schedule and seeded arrival jitter.
-- The baseline is fork commit `0966581`, with 256-frame packets and a 20 ms receiver target.
+- The baseline used 256-frame packets and a 20 ms receiver target.
 - Updated settings use 128-frame packets and a 10 ms initial target. The target increases after underruns, up to 30 ms.
 - The benchmark measures the pulse's source-to-mixer delay. It excludes WebRTC and Android output latency.
 

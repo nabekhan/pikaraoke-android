@@ -1,0 +1,184 @@
+diff --git a/pikaraoke/static/js/splash.js b/pikaraoke/static/js/splash.js
+index 710fb1c0549466282204135479432dcc0da837ad..d162072092cb90d706e75b947a345e6daffed5ee 100644
+--- a/pikaraoke/static/js/splash.js
++++ b/pikaraoke/static/js/splash.js
+@@ -12,6 +12,10 @@ const bgMediaResumeDelay = 2000;
+ const bgVideoChoices = PikaraokeConfig.bgVideoChoices;
+ let currentVideoUrl = null;
+ let hlsInstance = null;
++// Every source handoff gets a new generation. Delayed browser promises and
++// timers must not be allowed to play or report for the song they replaced.
++let videoSourceGeneration = 0;
++let activeVideoSource = null;
+ let idleTime = 0;
+ let screensaverTimeoutSeconds = PikaraokeConfig.screensaverTimeout;
+ let bg_playlist = [];
+@@ -114,17 +118,35 @@ const hideVideo = () => {
+   $("#video-container").hide();
+ }
+ 
+-const stopVideoPlayback = () => {
+-  currentVideoUrl = null;
+-  currentPlaybackId = null;
++const teardownVideoSource = (video = getVideoPlayer()) => {
++  activeVideoSource = null;
++  videoSourceGeneration += 1;
+   if (hlsInstance) {
+     hlsInstance.destroy();
+     hlsInstance = null;
+   }
+-  const video = getVideoPlayer();
+   video.pause();
+-  $("#video-source").attr("src", "");
++  // A native HLS assignment lives on video.src, while older progressive paths
++  // used this child source. Clear both before committing the empty media state.
++  video.removeAttribute("src");
++  document.getElementById("video-source")?.removeAttribute("src");
+   video.load();
++  return videoSourceGeneration;
++};
++
++const isCurrentVideoSource = (video) => {
++  const source = activeVideoSource;
++  return source && source.generation === videoSourceGeneration
++    && source.playbackId === currentPlaybackId && source.url === currentVideoUrl
++    && (source.hls ? source.hls === hlsInstance
++      : video.currentSrc === new URL(source.url, window.location.href).href);
++};
++
++const stopVideoPlayback = () => {
++  currentVideoUrl = null;
++  currentPlaybackId = null;
++  const video = getVideoPlayer();
++  teardownVideoSource(video);
+   hideVideo();
+ }
+ 
+@@ -364,37 +386,42 @@ const handleNowPlayingUpdate = (np) => {
+   }
+ 
+   if (np.now_playing_url && np.now_playing_url !== currentVideoUrl) {
+-    currentVideoUrl = np.now_playing_url;
+     const streamUrl = np.now_playing_url;
+-    $("#video-source").attr("src", "");
+-    video.load();
+-    $("#video-source").attr("src", streamUrl);
++    const sourceGeneration = teardownVideoSource(video);
++    currentVideoUrl = streamUrl;
++    const expectedDirectSource = new URL(streamUrl, window.location.href).href;
+ 
+     // A screen loading mid-song - a second screen, or this one reloaded - picks the
+     // song up where it is. hls.js starts there; a plain <video> seeks once it can.
+     const resumeAt = np.now_playing_position || 0;
+     const seekOnceLoaded = () => {
+       if (resumeAt) {
+-        video.addEventListener("loadedmetadata", () => { video.currentTime = resumeAt; }, { once: true });
++        video.addEventListener("loadedmetadata", () => {
++          if (sourceGeneration === videoSourceGeneration && video.currentSrc === expectedDirectSource) video.currentTime = resumeAt;
++        }, { once: true });
+       }
+     };
+ 
++    let newHlsInstance = null;
+     if (streamUrl.endsWith('.m3u8')) {
+       const useNativeHLS = video.canPlayType('application/vnd.apple.mpegurl') && !isChrome && !isEdge && !isMobileSafari;
+       if (useNativeHLS) {
+         video.src = streamUrl;
+         seekOnceLoaded();
+       } else {
+-        if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+-        hlsInstance = new Hls({ startPosition: resumeAt });
+-        hlsInstance.loadSource(streamUrl);
+-        hlsInstance.attachMedia(video);
++        newHlsInstance = hlsInstance = new Hls({ startPosition: resumeAt });
++        newHlsInstance.loadSource(streamUrl);
++        newHlsInstance.attachMedia(video);
+       }
+     } else {
++      video.src = streamUrl;
+       seekOnceLoaded();
+     }
+ 
+-    video.load();
++    // hls.js owns the MediaSource load. Native HLS and progressive media need
++    // an explicit load after their direct src assignment.
++    if (!newHlsInstance) video.load();
++    activeVideoSource = { generation: sourceGeneration, playbackId: currentPlaybackId, url: streamUrl, hls: newHlsInstance };
+     if (volume !== np.volume) {
+       volume = np.volume;
+       video.volume = volume;
+@@ -410,11 +437,30 @@ const handleNowPlayingUpdate = (np) => {
+ 
+     $("#video-container").show();
+ 
+-    video.play().catch(err => {
+-      console.error('Play failed:', err);
+-      // Retry once if it was an autoplay block
+-      setTimeout(() => video.play(), 1000);
+-    });
++    const isCurrentSource = () => sourceGeneration === videoSourceGeneration
++      && currentVideoUrl === streamUrl
++      && (newHlsInstance ? hlsInstance === newHlsInstance : video.src === expectedDirectSource);
++    let retriedPlay = false;
++    const playCurrentSource = () => {
++      if (!isCurrentSource()) return;
++      try {
++        const playing = video.play();
++        if (playing && typeof playing.catch === 'function') {
++          playing.catch(err => {
++            if (!isCurrentSource()) return;
++            console.error('Play failed:', err);
++            // Retry once if it was an autoplay block, but never on a successor.
++            if (!retriedPlay) {
++              retriedPlay = true;
++              setTimeout(() => { if (isCurrentSource()) playCurrentSource(); }, 1000);
++            }
++          });
++        }
++      } catch (err) {
++        if (isCurrentSource()) console.error('Play failed:', err);
++      }
++    };
++    playCurrentSource();
+ 
+     // Start-failure detection is server-side and progress-aware (the server ends
+     // a song that never confirms a start while the transcode has stalled). A
+@@ -487,11 +533,18 @@ const setupVideoPlayer = () => {
+   const video = getVideoPlayer();
+   video.addEventListener("play", () => {
+     $("#video-container").show();
+-    if (isMaster) {
++  });
++  video.addEventListener("playing", () => {
++    if (isMaster && isCurrentVideoSource(video)) {
+       // Capture the id now, not when the timer fires: a song skipped inside this
+       // delay must not have its late "started" report applied to the next one.
+       const startedPlaybackId = currentPlaybackId;
+-      setTimeout(() => { socket.emit("start_song", startedPlaybackId) }, 1200);
++      const startedGeneration = videoSourceGeneration;
++      setTimeout(() => {
++        if (startedGeneration === videoSourceGeneration && startedPlaybackId === currentPlaybackId && isMediaPlaying(video)) {
++          socket.emit("start_song", startedPlaybackId);
++        }
++      }, 1200);
+     }
+   });
+ 
+@@ -507,10 +560,14 @@ const setupVideoPlayer = () => {
+     }
+   }, 1000);
+ 
+-  video.addEventListener("ended", () => { endSong("complete", true); });
++  // Queued events from an old decoder must agree with the current element's
++  // state and source before they can finish its successor.
++  video.addEventListener("ended", () => {
++    if (video.ended && isCurrentVideoSource(video)) endSong("complete", true);
++  });
+   video.addEventListener("timeupdate", (e) => { $("#current").text(formatTime(video.currentTime)); });
+-  $("#video source")[0].addEventListener("error", (e) => {
+-    if (isMediaPlaying(video)) {
++  video.addEventListener("error", () => {
++    if (video.error && isCurrentVideoSource(video)) {
+       endSong("error while playing");
+     }
+   });
