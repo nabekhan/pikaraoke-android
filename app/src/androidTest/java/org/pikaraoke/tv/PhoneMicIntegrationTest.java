@@ -36,9 +36,14 @@ public class PhoneMicIntegrationTest {
             java.lang.reflect.Field output = PhoneMicHost.class.getDeclaredField("outputTrack");
             output.setAccessible(true);
             PhoneMicPlayback original = (PhoneMicPlayback) output.get(host);
+            int restartsBefore = new JSONObject(host.status()).getInt("output_restarts");
             original.pause();
-            await("Paused output was never replaced", () -> new JSONObject(host.status()).getInt("output_restarts") > 0);
-            await("Replacement output did not play", () -> new JSONObject(host.status()).getLong("output_playback_frames") > 1000);
+            await("Paused output was not replaced with playing output", () -> {
+                JSONObject status = new JSONObject(host.status());
+                return status.getInt("output_restarts") > restartsBefore
+                    && output.get(host) != original
+                    && status.getLong("output_playback_frames") > 1000;
+            });
             assertNotSame(original, output.get(host));
             assertEquals("", new JSONObject(host.status()).getString("output_error"));
             assertEquals("Room lost its microphone during output recovery", 1, new JSONObject(host.status()).getJSONArray("active").length());
@@ -67,12 +72,21 @@ public class PhoneMicIntegrationTest {
         public void onCreateFailure(String e) { created.completeExceptionally(new IllegalStateException(e)); }
         public void onSetFailure(String e) { set.completeExceptionally(new IllegalStateException(e)); }
     }
+    private static int candidateCount(String sdp) {
+        int count = 0;
+        for (String line : sdp.split("\\r?\\n")) if (line.startsWith("a=candidate:")) count++;
+        return count;
+    }
     @Test public void fourDataChannelsProduceNativeAudioAndReleaseSlots() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         PhoneMicHost.stopAll();
         PhoneMicHost host = PhoneMicHost.get(context);
         host.setMaxMics(4);
-        PeerConnectionFactory clients = PeerConnectionFactory.builder().createPeerConnectionFactory();
+        // These simulated phones share the receiver's Android process. Enumerate
+        // their native interfaces without adding another Android network monitor.
+        PeerConnectionFactory.Options clientOptions = new PeerConnectionFactory.Options();
+        clientOptions.disableNetworkMonitor = true;
+        PeerConnectionFactory clients = PeerConnectionFactory.builder().setOptions(clientOptions).createPeerConnectionFactory();
         List<PeerConnection> connections = new ArrayList<>();
         List<DataChannel> channels = new ArrayList<>();
         List<String> tokens = new ArrayList<>();
@@ -80,7 +94,9 @@ public class PhoneMicIntegrationTest {
             for(int i=0;i<4;i++) {
                 String id = new JSONObject(host.join("Phone "+(i+1))).getString("id"); tokens.add(id);
                 Observer observer = new Observer();
-                PeerConnection peer = clients.createPeerConnection(new PeerConnection.RTCConfiguration(Collections.emptyList()), observer);
+                PeerConnection.RTCConfiguration clientConfig = new PeerConnection.RTCConfiguration(Collections.emptyList());
+                clientConfig.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN;
+                PeerConnection peer = clients.createPeerConnection(clientConfig, observer);
                 assertNotNull(peer); connections.add(peer);
                 DataChannel.Init init = new DataChannel.Init(); init.ordered=false; init.maxRetransmits=0;
                 DataChannel channel = peer.createDataChannel("audio",init); channels.add(channel);
@@ -88,13 +104,16 @@ public class PhoneMicIntegrationTest {
                 SessionDescription local = offer.created.get(TIMEOUT,TimeUnit.SECONDS);
                 Description setLocal = new Description(); peer.setLocalDescription(setLocal,local); setLocal.set.get(TIMEOUT,TimeUnit.SECONDS);
                 observer.ice.get(TIMEOUT,TimeUnit.SECONDS);
-                JSONObject answer = new JSONObject(host.answer(id,peer.getLocalDescription().description));
+                String offerSdp = peer.getLocalDescription().description;
+                JSONObject answer = new JSONObject(host.answer(id,offerSdp));
                 Description setRemote = new Description();
                 peer.setRemoteDescription(setRemote,new SessionDescription(SessionDescription.Type.ANSWER,answer.getString("sdp")));
                 setRemote.set.get(TIMEOUT,TimeUnit.SECONDS);
                 long deadline=System.currentTimeMillis()+15000;
                 while(channel.state()!=DataChannel.State.OPEN && System.currentTimeMillis()<deadline) Thread.sleep(20);
-                assertEquals("sender ICE="+observer.iceState+"; receiver="+host.status(),DataChannel.State.OPEN,channel.state());
+                assertEquals("sender ICE="+observer.iceState+"; offer candidates="+candidateCount(offerSdp)
+                    +"; answer candidates="+candidateCount(answer.getString("sdp"))+"; receiver="+host.status(),
+                    DataChannel.State.OPEN,channel.state());
             }
             try { host.join("Fifth phone"); fail("A fifth microphone was admitted"); }
             catch(IllegalStateException expected) { }
