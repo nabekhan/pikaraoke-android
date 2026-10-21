@@ -7,7 +7,7 @@
 
 ## Transport test
 
-- `upstream/tools/benchmark_phone_mic.cjs` sends synthetic 997 Hz mono PCM16 through the real AudioWorklet and browser transports.
+- `app/src/test/phone-microphones/benchmark_phone_mic.cjs` sends synthetic 997 Hz mono PCM16 through the real AudioWorklet and browser transports.
 - Each case echoes 300 packets. The first 20 are excluded from timing statistics.
 - Values below are echo round-trip time divided by two, an estimate of local one-way transport time. No network loss was injected.
 - Every case returned all packets with their sample bytes unchanged.
@@ -27,7 +27,7 @@
 Run with Node, `playwright-core`, `ws`, and an installed Chrome:
 
 ```sh
-NODE_PATH=/path/to/node_modules CHROME_EXECUTABLE=/path/to/chrome node upstream/tools/benchmark_phone_mic.cjs
+NODE_PATH=/path/to/node_modules CHROME_EXECUTABLE=/path/to/chrome node app/src/test/phone-microphones/benchmark_phone_mic.cjs
 ```
 
 ## Receiver test

@@ -9,9 +9,9 @@ a local Android SDK or running computer is unnecessary.
 The updater follows the default branch of nabekhan/pikaraoke, retaining an exact
 submodule commit. That fork merges vicwomg/pikaraoke weekly at 07:23 UTC, before
 the Android check. Merge conflicts stop the sync for manual resolution; history
-is never rewritten. Shared microphone routes, UI, and storage changes live in
-the fork. The Android certificate service and receiver, packaging, and TV
-controls live here. It checks the latest stable yt-dlp release and records the
+is never rewritten. Storage and playback changes live in the fork. The complete
+phone-mic feature, Android packaging, and TV controls live here. It checks the
+latest stable yt-dlp release and records the
 official zipapp SHA-256 in ytdlp.json. Python dependencies come from upstream's
 pyproject.toml, with the Android replacements excluded and simple-websocket
 added. Existing compatible dependency pins are retained; the resolver changes

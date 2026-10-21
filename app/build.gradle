@@ -63,6 +63,7 @@ tasks.register('prepareUpstream', Exec) {
     workingDir rootDir
     commandLine System.getenv('PIKARAOKE_BUILD_PYTHON') ?: 'python3', 'scripts/prepare_upstream.py'
     inputs.dir rootProject.file('upstream/pikaraoke')
+    inputs.dir rootProject.file('app/src/main/phone-microphones')
     inputs.file rootProject.file('scripts/prepare_upstream.py')
     inputs.file rootProject.file('app/src/main/assets/android-tv.js')
     outputs.dir layout.buildDirectory.dir('generated/python')
