@@ -92,7 +92,7 @@ tasks.register('prepareIcons', Exec) {
 tasks.named('preBuild') { dependsOn 'prepareUpstream', 'prepareDownloader', 'prepareNotices', 'prepareIcons' }
 
 dependencies {
-    implementation 'io.github.webrtc-sdk:android-prefixed-stripped:150.7871.01'
+    implementation 'io.github.webrtc-sdk:android-prefixed-stripped:150.7871.04'
     implementation 'org.bouncycastle:bcpkix-jdk18on:1.86'
     implementation 'org.mozilla.geckoview:geckoview:158.0.20261007201254'
     implementation 'io.github.junkfood02.youtubedl-android:library:0.18.1'
