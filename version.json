@@ -1,10 +1,10 @@
 {
   "automated": true,
-  "automation_run_id": "39548566199",
-  "release_tag": "v1.23.0-android.15",
+  "automation_run_id": "40348181198",
+  "release_tag": "v1.23.0-android.16",
   "universal_apk_alias": true,
-  "upstream_sha": "4e525655fe0a633e380f6c3ed8beaa4b295cfb20",
-  "version_code": 15,
-  "version_name": "1.23.0-android.15",
-  "yt_dlp_version": "2026.08.19"
+  "upstream_sha": "193228afa73700906f18827798d1637c9e4d8856",
+  "version_code": 16,
+  "version_name": "1.23.0-android.16",
+  "yt_dlp_version": "2026.10.21"
 }
